@@ -3,7 +3,7 @@ DOT_GEN=$(BRIL_DIR)/examples/cfg_dot.py
 
 .PHONY: all clean
 
-all: cordic_cfg.png
+all: cordic.bril cordic_cfg.png
 
 clean:
 	rm -f *.bril *.dot *.png
