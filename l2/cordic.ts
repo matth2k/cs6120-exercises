@@ -1,4 +1,4 @@
-function cordicSin(theta: number): number {
+function cordic(theta: number): number {
     let cstab0: number = 0.78539816339744828000;
     let cstab1: number = 0.46364760900080609000;
     let cstab2: number = 0.24497866312686414000;
