@@ -8,12 +8,15 @@ all: cordic.bril cordic_cfg.png
 clean:
 	rm -f *.bril *.dot *.png
 
-%.bril: %.ts
+%.json: %.ts
 	echo "{" > $@
 	echo " \"functions\": [" >> $@
 	ts2bril $< | tail -n +8 >> $@
 
-%_cfg.dot: %.bril
+%.bril: %.json
+	bril2txt < $< > $@
+
+%_cfg.dot: %.json
 	python3 $(DOT_GEN) < $< | sed 's/\./_/g' > $@
 
 %_cfg.png: %_cfg.dot
