@@ -23,5 +23,5 @@ if __name__ == "__main__":
                     constantAllocSpace += 1
 
     print(
-        f"There are {constantAllocSpace} bits worth of constants used in the program."
+        f"There are {constantAllocSpace} bits-worth of constants used in the program."
     )
