@@ -66,3 +66,23 @@ def to_cfg_edges(
 
         if lastBlock is not None:
             yield lastBlock, label
+
+
+def from_blocks(
+    func,
+    blks: list[tuple[str, list[Any]]],
+    name: str = None,
+    type: str = None,
+    args: list[Any] = None,
+) -> Any:
+    func["instrs"] = []
+    for _, blk in blks:
+        func["instrs"] += blk
+
+    if name is not None:
+        func["name"] = name
+    if type is not None:
+        func["type"] = type
+    if args is not None:
+        func["args"] = args
+    return func
