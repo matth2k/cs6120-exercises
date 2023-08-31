@@ -32,7 +32,9 @@ def to_blocks(func) -> Generator[tuple[str, list[Any]], None, None]:
 
     if "type" in func and len(cblk) > 0:
         raise Exception(f"Func did not end on terminator")
-    elif len(cblk) > 0:
+
+    cblk += labelStack
+    if len(cblk) > 0:
         yield cname, cblk
 
 

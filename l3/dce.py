@@ -5,6 +5,7 @@ import json
 from butils import *
 
 side_effects = []
+show_deleted = False
 
 
 def dce_block_out_dep(instrs: list[Any]) -> tuple[list[Any], bool]:
@@ -16,6 +17,8 @@ def dce_block_out_dep(instrs: list[Any]) -> tuple[list[Any], bool]:
         if "dest" in insn:
             if insn["dest"] in isDead:
                 modified = True
+                if show_deleted:
+                    print(f"Deleted {insn}", file=sys.stderr)
             else:
                 returnInstrs.append(insn)
                 isDead.add(insn["dest"])
@@ -48,6 +51,8 @@ def dce_func_use_dep(instrs: list[Any], tillConverge=True) -> tuple[list[Any], b
             and insn["op"] not in side_effects
         ):
             modified = True
+            if show_deleted:
+                print(f"Deleted {insn}", file=sys.stderr)
         else:
             returnInstrs.append(insn)
 
@@ -62,12 +67,17 @@ if __name__ == "__main__":
     parser.add_argument("--no-out-dep", dest="out_dep", action="store_false")
     parser.add_argument("--no-use-dep", dest="use_dep", action="store_false")
     parser.add_argument(
+        "-v", "--verbose", dest="verbose", default=False, action="store_true"
+    )
+    parser.add_argument(
         "input", nargs="?", type=argparse.FileType("r"), default=sys.stdin
     )
     parser.add_argument(
         "output", nargs="?", type=argparse.FileType("w"), default=sys.stdout
     )
     args = parser.parse_args()
+    if args.verbose:
+        show_deleted = True
 
     brilProgram = json.load(args.input)
 
