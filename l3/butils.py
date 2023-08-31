@@ -30,8 +30,10 @@ def to_blocks(func) -> Generator[tuple[str, list[Any]], None, None]:
         else:
             raise Exception(f"bad Instruction {insn}")
 
-    if len(cblk) > 0:
+    if "type" in func and len(cblk) > 0:
         raise Exception(f"Func did not end on terminator")
+    elif len(cblk) > 0:
+        yield cname, cblk
 
 
 def get_blk_name(blk: tuple[str, Any]) -> str:

@@ -54,7 +54,7 @@ def dce_func_use_dep(instrs: list[Any], tillConverge=True) -> tuple[list[Any], b
     if not tillConverge or not modified:
         return returnInstrs, modified
     else:
-        return dce_func_raw(returnInstrs, tillConverge)
+        return dce_func_use_dep(returnInstrs, tillConverge)
 
 
 if __name__ == "__main__":
@@ -63,6 +63,9 @@ if __name__ == "__main__":
     parser.add_argument("--no-use-dep", dest="use_dep", action="store_false")
     parser.add_argument(
         "input", nargs="?", type=argparse.FileType("r"), default=sys.stdin
+    )
+    parser.add_argument(
+        "output", nargs="?", type=argparse.FileType("w"), default=sys.stdout
     )
     args = parser.parse_args()
 
@@ -81,8 +84,6 @@ if __name__ == "__main__":
     if args.out_dep:
         for f in dceFuncs:
             dceBlks = []
-            print(f)
-            print("endfunc")
             for b in list(to_blocks(f)):
                 dceB = dce_block_out_dep(b[1])[0]
                 if len(dceB) > 0:
@@ -94,5 +95,5 @@ if __name__ == "__main__":
     before = get_instr_count(brilProgram)
     brilProgram["functions"] = outputFuncs
     after = get_instr_count(brilProgram)
-    print(f"{sys.argv[0]}: Instructions saved : {before - after}", file=sys.stderr)
-    json.dump(brilProgram, sys.stdout, indent=4)
+    print(f"{sys.argv[0]}: Instructions deleted : {before - after}", file=sys.stderr)
+    json.dump(brilProgram, args.output, indent=2)
