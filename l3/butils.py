@@ -31,7 +31,7 @@ def to_blocks(func) -> Generator[tuple[str, list[Any]], None, None]:
             raise Exception(f"bad Instruction {insn}")
 
     if len(cblk) > 0:
-        raise Exception(f"Program did not end on terminator")
+        raise Exception(f"Func did not end on terminator")
 
 
 def get_blk_name(blk: tuple[str, Any]) -> str:
@@ -75,14 +75,44 @@ def from_blocks(
     type: str = None,
     args: list[Any] = None,
 ) -> Any:
-    func["instrs"] = []
+    returnFunc = func.copy()
+    returnFunc["instrs"] = []
     for _, blk in blks:
-        func["instrs"] += blk
+        returnFunc["instrs"] += blk
 
     if name is not None:
-        func["name"] = name
+        returnFunc["name"] = name
     if type is not None:
-        func["type"] = type
+        returnFunc["type"] = type
     if args is not None:
-        func["args"] = args
-    return func
+        returnFunc["args"] = args
+    return returnFunc
+
+
+def from_list(
+    func,
+    ilist: list[Any],
+    name: str = None,
+    type: str = None,
+    args: list[Any] = None,
+) -> Any:
+    returnFunc = func.copy()
+    returnFunc["instrs"] = ilist
+
+    if name is not None:
+        returnFunc["name"] = name
+    if type is not None:
+        returnFunc["type"] = type
+    if args is not None:
+        returnFunc["args"] = args
+    return returnFunc
+
+
+def get_instr_count(brilProgram: Any) -> int:
+    count = 0
+    for f in brilProgram["functions"]:
+        for insn in f["instrs"]:
+            if "op" in insn:
+                count += 1
+
+    return count
