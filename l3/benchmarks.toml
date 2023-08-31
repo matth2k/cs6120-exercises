@@ -1,0 +1,29 @@
+# add benchmarks via Makefile
+extract = 'total_dyn_inst: (\d+)'
+
+[runs.baseline]
+pipeline = [
+    "bril2json",
+    "brili -p {args}",
+]
+
+[runs.dceNoOutDep]
+pipeline = [
+    "bril2json",
+    "python3 ./dce.py --no-out-dep",
+    "brili -p {args}",
+]
+
+[runs.dceNoUseDep]
+pipeline = [
+    "bril2json",
+    "python3 ./dce.py --no-use-dep",
+    "brili -p {args}",
+]
+
+[runs.fullDce]
+pipeline = [
+    "bril2json",
+    "python3 ./dce.py",
+    "brili -p {args}",
+]
