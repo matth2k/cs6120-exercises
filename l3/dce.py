@@ -4,6 +4,19 @@ import json
 
 from butils import *
 
+
+def dce_block(block: list[Any]) -> tuple[list[Any], bool]:
+    toKeep = set()
+    for i, p in enumerate(block):
+        if "dest" in p:
+            for c in enumerate(block, start=i + 1):
+                if "args" in c and p["dest"] in c["args"]:
+                    toKeep.add(i)
+                    break
+
+    return [p for i, p in enumerate(block) if i in toKeep]
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument(
