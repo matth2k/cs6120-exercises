@@ -27,3 +27,11 @@ pipeline = [
     "python3 ./dce.py",
     "brili -p {args}",
 ]
+
+[runs.fullLvnDce]
+pipeline = [
+    "bril2json",
+    "python3 ./lvn.py",
+    "python3 ./dce.py",
+    "brili -p {args}",
+]
