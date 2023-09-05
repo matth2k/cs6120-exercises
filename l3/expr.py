@@ -25,7 +25,7 @@ class Expr(ABC):
         if "dest" not in instr:
             return None
         if instr["op"] == "const":
-            return Value(instr["value"], instr["type"])
+            return Const(instr["value"], instr["type"])
 
         if dict is not None:
             if "args" in instr:
@@ -43,7 +43,6 @@ class Expr(ABC):
             return UnaryExpr(
                 instr["op"],
                 tuple(arg if dict is None else dict[arg] for arg in instr["args"]),
-                instr["type"],
             ).fold()
 
         return None
@@ -65,7 +64,7 @@ class BinaryExpr(Expr):
     }
     commutative_ops = {"add", "mul", "eq", "and", "or"}
 
-    def __init__(self, op, args: tuple[Any], type: str = "int"):
+    def __init__(self, op, args: tuple[Any], type: str):
         self.op = op
         self.args = args
         self.type = type
@@ -79,32 +78,45 @@ class BinaryExpr(Expr):
         return BinaryExpr(self.op, self.args, self.type)
 
     def __str__(self) -> str:
-        return f"{self.op} {self.args[0]}, {self.args[1]}"
+        return f"{self.op} #{self.args[0]}, #{self.args[1]}"
 
 
 class Value(Expr):
+    def __init__(self, val: Any):
+        self.val = val
+
+    def fold(self) -> Expr:
+        return Value(self.val)
+
+    def __lt__(self, obj):
+        return self.val < obj.val
+
+    def __str__(self) -> str:
+        return f"#{self.val}"
+
+
+class Const(Expr):
     def __init__(self, val: Any, type: str):
         self.val = val
         self.type = type
 
     def fold(self) -> Expr:
-        return Value(self.val, self.type)
+        return Const(self.val, self.type)
 
     def __str__(self) -> str:
-        return f"{self.val} : {self.type}"
+        return f"const {self.val} : {self.type}"
 
 
 class UnaryExpr(Expr):
     unary_ops = {"not": lambda a: not a, "id": lambda a: a}
 
-    def __init__(self, op, arg: Any, type: str):
+    def __init__(self, op, arg: Any):
         self.op = op
         self.args = tuple(arg)
-        self.type = type
 
     def fold(self) -> Expr:
         if self.op == "id":
-            return Value(self.args[0], self.type)
+            return Value(self.args[0].val)
 
     def __str__(self) -> str:
-        return f"{self.op} {self.args[0]}"
+        return f"{self.op} #{self.args[0]}"

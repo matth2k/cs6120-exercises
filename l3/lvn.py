@@ -1,11 +1,12 @@
 import argparse
 import sys
 import json
+from collections import OrderedDict
 
 from butils import *
 from expr import *
 
-show_folded = False
+show_lvn = False
 
 
 def insert_phi(instrs: list[Any]) -> list[Any]:
@@ -42,6 +43,13 @@ def insert_phi(instrs: list[Any]) -> list[Any]:
     return returnInstrs
 
 
+def get_first_live(dict: dict[Any, bool]) -> Any:
+    for k, v in dict.items():
+        if v:
+            return k
+    return None
+
+
 def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
     returnInstrs = []
     modified = False
@@ -49,31 +57,46 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
     var2Num = {}
     num2Val = {}
 
-    aliased_instrs = insert_phi(instrs)
+    # aliased_instrs = insert_phi(instrs)
 
-    for insn in aliased_instrs:
+    for insn in instrs:
         expr = Expr.from_instr(insn, var2Num)
         if expr is None:
             returnInstrs.append(insn)
             continue
 
-        entry = (expr, set([insn["dest"]]))
+        entry = (expr, OrderedDict({insn["dest"]: True}))
 
-        # Clobber for now. Later rename variables
+        # TODO: Clobber for now. Later rename variables
         if insn["dest"] in var2Num:
-            print("Clobbering", insn["dest"])
-            num2Val[var2Num[insn["dest"]]][1].discard(insn["dest"])
+            num2Val[var2Num[insn["dest"]]][1][insn["dest"]] = False
 
         # Update LVM table
         if expr in val2Num:
+            if show_lvn:
+                print(
+                    f"lvn: Found {expr} as {val2Num[expr]} for {insn['dest']}",
+                    file=sys.stderr,
+                )
             var2Num[insn["dest"]] = val2Num[expr]
-            num2Val[val2Num[expr]][1].add(insn["dest"])
+            num2Val[val2Num[expr]][1][(insn["dest"])] = True
+        elif isinstance(expr, Value):
+            if show_lvn:
+                print(
+                    f"lvn: Reusing {expr} for {insn['dest']}",
+                    file=sys.stderr,
+                )
+            var2Num[insn["dest"]] = expr
+            num2Val[expr][1][insn["dest"]] = True
         else:
-            val2Num[expr] = len(num2Val)
-
-            var2Num[insn["dest"]] = len(num2Val)
-
-            num2Val[len(num2Val)] = entry
+            if show_lvn:
+                print(
+                    f"lvn: Adding {expr} as {Value(len(num2Val))} for {insn['dest']}",
+                    file=sys.stderr,
+                )
+            val2Num[expr] = Value(len(num2Val))
+            var2Num[insn["dest"]] = Value(len(num2Val))
+            num2Val[Value(len(num2Val))] = entry
 
         if "args" not in insn:
             returnInstrs.append(insn)
@@ -84,8 +107,12 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
         remappedArgs = []
         for arg in insn["args"]:
             # get a canonical variable left in the set
-            pval = num2Val[var2Num[arg]][1].pop()
-            num2Val[var2Num[arg]][1].add(pval)
+            pval = get_first_live(num2Val[var2Num[arg]][1])
+            if show_lvn and arg != pval:
+                print(
+                    f"lvn: Rewriting arg {arg} to {pval} for a match on number {var2Num[arg]}",
+                    file=sys.stderr,
+                )
             remappedArgs.append(pval)
 
         rewritten["args"] = remappedArgs
@@ -110,7 +137,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     if args.verbose:
-        show_folded = True
+        show_lvn = True
 
     brilProgram = json.load(args.input)
 
@@ -125,4 +152,4 @@ if __name__ == "__main__":
 
     brilProgram["functions"] = outputFuncs
 
-    json.dump(brilProgram, args.output, indent=2)
+    json.dump(brilProgram, args.output, indent=2, sort_keys=True)

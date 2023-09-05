@@ -111,4 +111,4 @@ if __name__ == "__main__":
         f"{sys.argv[0]}: Percent Instructions deleted: {(before - after) * 100 / before:.2}",
         file=sys.stderr,
     )
-    json.dump(brilProgram, args.output, indent=2)
+    json.dump(brilProgram, args.output, indent=2, sort_keys=True)
