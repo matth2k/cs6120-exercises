@@ -16,8 +16,6 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
     var2Num = {}
     num2Val = {}
 
-    # aliased_instrs = insert_phi(instrs)
-
     for insn in instrs:
         expr = Expr.from_instr(insn, var2Num, num2Val)
         if expr is None:
