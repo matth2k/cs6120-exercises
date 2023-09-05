@@ -1,11 +1,19 @@
 from __future__ import annotations
 from typing import Any
 from abc import ABC, abstractmethod
+import sys
+
+
+def get_first_live(dict: dict[Any, bool]) -> Any:
+    for k, v in dict.items():
+        if v:
+            return k
+    return None
 
 
 class Expr(ABC):
     @abstractmethod
-    def fold(self):
+    def fold(self, num2Val: dict[Value, Expr] = None) -> Expr:
         pass
 
     @abstractmethod
@@ -20,30 +28,65 @@ class Expr(ABC):
         foldObj = obj.fold()
         return type(foldSelf) == type(foldObj) and foldSelf.__dict__ == foldObj.__dict__
 
-    # dict will be var2Num
-    def from_instr(instr: Any, dict: dict = None) -> Expr:
+    def to_instr(
+        self, oldInsn, var2Num: dict[str, Expr], num2Val: dict[Value, tuple[Expr, Any]]
+    ) -> Any:
+        dest = oldInsn["dest"] if "dest" in oldInsn else None
+        oldArgs = oldInsn["args"] if "args" in oldInsn else None
+        if isinstance(self, Const):
+            return {"op": "const", "dest": dest, "value": self.val, "type": self.type}
+        elif isinstance(self, Value):
+            return {
+                "op": "id",
+                "dest": dest,
+                "type": self.type,
+                "args": [
+                    get_first_live(num2Val[self.val][1])
+                    if self.val in num2Val
+                    else oldArgs[0]
+                ],
+            }
+        elif isinstance(self, BinaryExpr) or isinstance(self, UnaryExpr):
+            return {
+                "op": self.op,
+                "dest": dest,
+                "args": [get_first_live(num2Val[arg][1]) for arg in self.args],
+                "type": self.type,
+            }
+        raise Exception(f"Unhandled Expression {self}")
+
+    def from_instr(
+        instr: Any,
+        var2Num: dict[str, Expr] = None,
+        num2Val: dict[Value, tuple[Expr, Any]] = None,
+    ) -> Expr:
         if "dest" not in instr:
             return None
         if instr["op"] == "const":
             return Const(instr["value"], instr["type"])
 
-        if dict is not None:
+        if var2Num is not None:
             if "args" in instr:
                 for arg in instr["args"]:
-                    if arg not in dict:
+                    if arg not in var2Num:
                         return None
 
         if instr["op"] in BinaryExpr.binary_ops:
             return BinaryExpr(
                 instr["op"],
-                tuple(arg if dict is None else dict[arg] for arg in instr["args"]),
+                tuple(
+                    arg if var2Num is None else var2Num[arg] for arg in instr["args"]
+                ),
                 instr["type"],
-            ).fold()
+            ).fold(num2Val)
         if instr["op"] in UnaryExpr.unary_ops:
             return UnaryExpr(
                 instr["op"],
-                tuple(arg if dict is None else dict[arg] for arg in instr["args"]),
-            ).fold()
+                tuple(
+                    arg if var2Num is None else var2Num[arg] for arg in instr["args"]
+                ),
+                instr["type"],
+            ).fold(num2Val)
 
         return None
 
@@ -69,24 +112,40 @@ class BinaryExpr(Expr):
         self.args = args
         self.type = type
 
-    def fold(self) -> Expr:
+    def fold(self, num2Val: dict[Value, tuple[Expr, Any]] = None) -> Expr:
         if self.op in self.commutative_ops and self.type != "float":
             newArgs = list(self.args).sort()
             if newArgs is not None:
-                return BinaryExpr(self.op, tuple(newArgs), self.type)
+                toTuple = tuple(newArgs)
+                if toTuple != self.args:
+                    return BinaryExpr(self.op, toTuple, self.type).fold(num2Val)
+
+        constOperands = []
+        if num2Val is not None:
+            for arg in self.args:
+                if arg in num2Val:
+                    val = num2Val[arg][0].fold(num2Val)
+                    if isinstance(val, Const):
+                        constOperands.append(eval(f"{val.type}({val.val})"))
+        if len(constOperands) == 2:
+            computed = self.binary_ops[self.op](constOperands[0], constOperands[1])
+            return Const(eval(f"{self.type}({computed})"), self.type)
 
         return BinaryExpr(self.op, self.args, self.type)
 
     def __str__(self) -> str:
-        return f"{self.op} #{self.args[0]}, #{self.args[1]}"
+        return f"{self.op} {self.args[0]}, {self.args[1]}"
 
 
 class Value(Expr):
-    def __init__(self, val: Any):
+    def __init__(self, val: Any, type: str):
         self.val = val
+        self.type = type
 
-    def fold(self) -> Expr:
-        return Value(self.val)
+    def fold(self, num2Val: dict[Value, tuple[Expr, Any]] = None) -> Expr:
+        if num2Val is not None and self in num2Val:
+            return num2Val[self][0].fold(num2Val)
+        return Value(self.val, self.type)
 
     def __lt__(self, obj):
         return self.val < obj.val
@@ -100,8 +159,11 @@ class Const(Expr):
         self.val = val
         self.type = type
 
-    def fold(self) -> Expr:
+    def fold(self, num2Val: dict[Value, tuple[Expr, Any]] = None) -> Expr:
         return Const(self.val, self.type)
+
+    def __lt__(self, obj):
+        return self.val < obj.val
 
     def __str__(self) -> str:
         return f"const {self.val} : {self.type}"
@@ -110,13 +172,14 @@ class Const(Expr):
 class UnaryExpr(Expr):
     unary_ops = {"not": lambda a: not a, "id": lambda a: a}
 
-    def __init__(self, op, arg: Any):
+    def __init__(self, op, arg: Any, type: str):
         self.op = op
         self.args = tuple(arg)
+        self.type = type
 
-    def fold(self) -> Expr:
+    def fold(self, num2Val: dict[Value, tuple[Expr, Any]] = None) -> Expr:
         if self.op == "id":
-            return Value(self.args[0].val)
+            return Value(self.args[0].val, self.type)
 
     def __str__(self) -> str:
-        return f"{self.op} #{self.args[0]}"
+        return f"{self.op} {self.args[0]}"

@@ -60,7 +60,7 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
     # aliased_instrs = insert_phi(instrs)
 
     for insn in instrs:
-        expr = Expr.from_instr(insn, var2Num)
+        expr = Expr.from_instr(insn, var2Num, num2Val)
         if expr is None:
             returnInstrs.append(insn)
             continue
@@ -87,36 +87,28 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
                     file=sys.stderr,
                 )
             var2Num[insn["dest"]] = expr
-            num2Val[expr][1][insn["dest"]] = True
         else:
             if show_lvn:
                 print(
-                    f"lvn: Adding {expr} as {Value(len(num2Val))} for {insn['dest']}",
+                    f"lvn: Adding {expr} as {Value(len(num2Val), insn['type'])} for {insn['dest']}",
                     file=sys.stderr,
                 )
-            val2Num[expr] = Value(len(num2Val))
-            var2Num[insn["dest"]] = Value(len(num2Val))
-            num2Val[Value(len(num2Val))] = entry
+            val2Num[expr] = Value(len(num2Val), insn["type"])
+            var2Num[insn["dest"]] = Value(len(num2Val), insn["type"])
+            num2Val[Value(len(num2Val), insn["type"])] = entry
 
         if "args" not in insn:
             returnInstrs.append(insn)
             continue
 
         # rewrite the instruction with latest table
-        rewritten = insn.copy()
-        remappedArgs = []
-        for arg in insn["args"]:
-            # get a canonical variable left in the set
-            pval = get_first_live(num2Val[var2Num[arg]][1])
-            if show_lvn and arg != pval:
+        rewritten = expr.to_instr(insn, var2Num, num2Val)
+        if rewritten != insn:
+            if show_lvn and "args" in rewritten and "args" in insn:
                 print(
-                    f"lvn: Rewriting arg {arg} to {pval} for a match on number {var2Num[arg]}",
+                    f"lvn: Rewrote {insn['args']} to {rewritten['args']}",
                     file=sys.stderr,
                 )
-            remappedArgs.append(pval)
-
-        rewritten["args"] = remappedArgs
-        if rewritten != insn:
             modified = True
 
         returnInstrs.append(rewritten)
