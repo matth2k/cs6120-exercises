@@ -18,7 +18,7 @@ def dce_block_out_dep(instrs: list[Any]) -> tuple[list[Any], bool]:
             if insn["dest"] in isDead:
                 modified = True
                 if show_deleted:
-                    print(f"Deleted {insn}", file=sys.stderr)
+                    print(f"{sys.argv[0]}: Deleted {insn}", file=sys.stderr)
             else:
                 returnInstrs.append(insn)
                 isDead.add(insn["dest"])
@@ -52,7 +52,7 @@ def dce_func_use_dep(instrs: list[Any], tillConverge=True) -> tuple[list[Any], b
         ):
             modified = True
             if show_deleted:
-                print(f"Deleted {insn}", file=sys.stderr)
+                print(f"{sys.argv[0]}: Deleted {insn}", file=sys.stderr)
         else:
             returnInstrs.append(insn)
 
@@ -106,9 +106,10 @@ if __name__ == "__main__":
     brilProgram["functions"] = outputFuncs
     after = get_instr_count(brilProgram)
 
-    print(f"{sys.argv[0]}: Instructions deleted: {before - after}", file=sys.stderr)
-    print(
-        f"{sys.argv[0]}: Percent Instructions deleted: {(before - after) * 100 / before:.2}",
-        file=sys.stderr,
-    )
+    if show_deleted:
+        print(f"{sys.argv[0]}: Instructions deleted: {before - after}", file=sys.stderr)
+        print(
+            f"{sys.argv[0]}: Percent Instructions deleted: {(before - after) * 100 / before:.2f}%",
+            file=sys.stderr,
+        )
     json.dump(brilProgram, args.output, indent=2, sort_keys=True)

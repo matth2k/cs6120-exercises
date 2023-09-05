@@ -32,7 +32,7 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
         if expr in val2Num:
             if show_lvn:
                 print(
-                    f"lvn: Found {expr} as {val2Num[expr]} for {insn['dest']}",
+                    f"{sys.argv[0]}: Found {expr} as {val2Num[expr]} for {insn['dest']}",
                     file=sys.stderr,
                 )
             var2Num[insn["dest"]] = val2Num[expr]
@@ -40,14 +40,14 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
         elif isinstance(expr, Value):
             if show_lvn:
                 print(
-                    f"lvn: Reusing {expr} for {insn['dest']}",
+                    f"{sys.argv[0]}: Reusing {expr} for {insn['dest']}",
                     file=sys.stderr,
                 )
             var2Num[insn["dest"]] = expr
         else:
             if show_lvn:
                 print(
-                    f"lvn: Adding {expr} as {Value(len(num2Val), insn['type'])} for {insn['dest']}",
+                    f"{sys.argv[0]}: Adding {expr} as {Value(len(num2Val), insn['type'])} for {insn['dest']}",
                     file=sys.stderr,
                 )
             val2Num[expr] = Value(len(num2Val), insn["type"])
@@ -63,7 +63,7 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
         if rewritten != insn:
             if show_lvn and "args" in rewritten and "args" in insn:
                 print(
-                    f"lvn: Rewrote {insn['args']} to {rewritten['args']}",
+                    f"{sys.argv[0]}: Rewrote {insn['args']} to {rewritten['args']}",
                     file=sys.stderr,
                 )
             modified = True
