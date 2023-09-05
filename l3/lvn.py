@@ -9,47 +9,6 @@ from expr import *
 show_lvn = False
 
 
-def insert_phi(instrs: list[Any]) -> list[Any]:
-    defined = set()
-    returnInstrs = []
-    i = 0
-    for insn in instrs:
-        newInsn = insn.copy()
-        newArgs = []
-        if "args" in insn:
-            for arg in insn["args"]:
-                if arg not in defined:
-                    phiName = "phi" + str(i)
-                    returnInstrs.append(
-                        {
-                            "op": "id",
-                            "dest": phiName,
-                            "type": insn["type"],
-                            "args": [arg],
-                        }
-                    )
-                    defined.add(phiName)
-                    newArgs.append(phiName)
-                    i += 1
-                else:
-                    newArgs.append(arg)
-
-            newInsn["args"] = newArgs
-
-        if "dest" in insn:
-            defined.add(insn["dest"])
-        returnInstrs.append(newInsn)
-
-    return returnInstrs
-
-
-def get_first_live(dict: dict[Any, bool]) -> Any:
-    for k, v in dict.items():
-        if v:
-            return k
-    return None
-
-
 def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
     returnInstrs = []
     modified = False
