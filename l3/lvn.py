@@ -32,7 +32,7 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
         if insn["dest"] in var2Num:
             isRenamed = False
             renamedVar = insn["dest"] + "_lvn"  # This naming is probably not unique
-            for n, v in num2Val:
+            for n, v in num2Val.items():
                 if insn["dest"] in v[1]:
                     v[1][insn["dest"]] = False
                     if count_trues(v[1]) == 0:
@@ -52,7 +52,7 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
                         f"{sys.argv[0]}: Made a copy for {insn['dest']}",
                         file=sys.stderr,
                     )
-                for n, v in num2Val:
+                for n, v in num2Val.items():
                     if insn["dest"] in v[1]:
                         v[1][insn["dest"]] = False
                         v[1][renamedVar] = True
