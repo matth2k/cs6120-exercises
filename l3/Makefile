@@ -8,6 +8,7 @@ BENCH_RESULTS=core.csv float.csv mem.csv mixed.csv
 all: tests
 
 tests: $(BENCH_RESULTS)
+	cat $^ > all.csv
 
 %.csv:
 	echo "benchmarks = '$(BENCH_DIRS)/$*/*.bril'" > $*.toml

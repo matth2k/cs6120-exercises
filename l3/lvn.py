@@ -73,6 +73,7 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
                     file=sys.stderr,
                 )
             var2Num[insn["dest"]] = expr
+            num2Val[expr][1][(insn["dest"])] = True
         else:
             if show_lvn:
                 print(
