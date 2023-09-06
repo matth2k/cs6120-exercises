@@ -9,6 +9,10 @@ from expr import *
 show_lvn = False
 
 
+def count_trues(dict: dict[str, bool]) -> int:
+    return sum([1 for v in dict.values() if v])
+
+
 def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
     returnInstrs = []
     modified = False
@@ -24,9 +28,34 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
 
         entry = (expr, OrderedDict({insn["dest"]: True}))
 
-        # TODO: Clobber for now. Later rename variables
+        # If we already have an expression from this var, we need to decide whether to (1) clobber  the LVN or (2) rename the variable
         if insn["dest"] in var2Num:
-            num2Val[var2Num[insn["dest"]]][1][insn["dest"]] = False
+            isRenamed = False
+            renamedVar = insn["dest"] + "_lvn"  # This naming is probably not unique
+            for n, v in num2Val:
+                if insn["dest"] in v[1]:
+                    v[1][insn["dest"]] = False
+                    if count_trues(v[1]) == 0:
+                        # We want to keep the expression alive with a new copy
+                        copiedInsn = {
+                            "op": "id",
+                            "dest": renamedVar,
+                            "type": insn["type"],
+                            "args": [insn["dest"]],
+                        }
+                        returnInstrs.append(copiedInsn)
+                        isRenamed = True
+                        break
+            if isRenamed:
+                if show_lvn:
+                    print(
+                        f"{sys.argv[0]}: Made a copy for {insn['dest']}",
+                        file=sys.stderr,
+                    )
+                for n, v in num2Val:
+                    if insn["dest"] in v[1]:
+                        v[1][insn["dest"]] = False
+                        v[1][renamedVar] = True
 
         # Update LVM table
         if expr in val2Num:

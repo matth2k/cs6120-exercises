@@ -130,6 +130,12 @@ class BinaryExpr(Expr):
         if len(constOperands) == 2:
             computed = self.binary_ops[self.op](constOperands[0], constOperands[1])
             return Const(eval(f"{self.type}({computed})"), self.type)
+        elif int(0) in constOperands and self.op == "mul":
+            return Const(int(0), self.type)
+        elif False in constOperands and self.op == "and":
+            return Const(False, self.type)
+        elif True in constOperands and self.op == "or":
+            return Const(True, self.type)
 
         return BinaryExpr(self.op, self.args, self.type)
 
@@ -179,7 +185,19 @@ class UnaryExpr(Expr):
 
     def fold(self, num2Val: dict[Value, tuple[Expr, Any]] = None) -> Expr:
         if self.op == "id":
-            return Value(self.args[0].val, self.type)
+            return Value(self.args[0].val, self.type).fold(num2Val)
+
+        constOperands = []
+        if num2Val is not None:
+            for arg in self.args:
+                if arg in num2Val:
+                    val = num2Val[arg][0].fold(num2Val)
+                    if isinstance(val, Const):
+                        constOperands.append(eval(f"{val.type}({val.val})"))
+
+        if len(constOperands) == 1:
+            computed = self.unary_ops[self.op](constOperands[0])
+            return Const(eval(f"{self.type}({computed})"), self.type)
 
     def __str__(self) -> str:
         return f"{self.op} {self.args[0]}"
