@@ -22,14 +22,9 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
 
     for insn in instrs:
         expr = Expr.from_instr(insn, var2Num, num2Val)
-        if expr is None:
-            returnInstrs.append(insn)
-            continue
-
-        entry = (expr, OrderedDict({insn["dest"]: True}))
 
         # If we already have an expression from this var, we need to decide whether to (1) clobber  the LVN or (2) rename the variable
-        if insn["dest"] in var2Num:
+        if "dest" in insn and insn["dest"] in var2Num:
             isRenamed = False
             renamedVar = insn["dest"] + "_lvn"  # This naming is probably not unique
             for n, v in num2Val.items():
@@ -56,6 +51,12 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
                     if insn["dest"] in v[1]:
                         v[1][insn["dest"]] = False
                         v[1][renamedVar] = True
+
+        if expr is None:
+            returnInstrs.append(insn)
+            continue
+
+        entry = (expr, OrderedDict({insn["dest"]: True}))
 
         # Update LVM table
         if expr in val2Num:

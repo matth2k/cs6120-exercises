@@ -1,6 +1,6 @@
 from typing import Generator, Any
 
-branch_ops = ["br", "jmp"]
+BRANCH_OPS = ["br", "jmp"]
 term_ops = ["ret", "br", "jmp"]
 
 
@@ -61,7 +61,7 @@ def to_cfg_edges(
         if "op" not in term:
             raise Exception(f"bad terminator {term}")
 
-        if term["op"] in branch_ops:
+        if term["op"] in BRANCH_OPS:
             for branch in term["labels"]:
                 yield label, branch
             lastBlock = None
