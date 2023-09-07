@@ -13,18 +13,28 @@ def count_trues(dict: dict[str, bool]) -> int:
     return sum([1 for v in dict.values() if v])
 
 
-def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
+def blk_lvn(instrs: list[Any], args: list[Any] = []) -> tuple[list[Any], bool]:
     returnInstrs = []
     modified = False
     val2Num = {}
     var2Num = {}
     num2Val = {}
 
+    for arg in args:
+        argExpr = Value(len(num2Val), arg["type"])
+        var2Num[arg["name"]] = Value(len(num2Val), arg["type"])
+        num2Val[Value(len(num2Val), arg["type"])] = (
+            argExpr,
+            OrderedDict({arg["name"]: True}),
+        )
+
     for insn in instrs:
         expr = Expr.from_instr(insn, var2Num, num2Val)
 
         # If we already have an expression from this var, we need to decide whether to (1) clobber  the LVN or (2) rename the variable
         if "dest" in insn and insn["dest"] in var2Num:
+            if show_lvn:
+                print(f"{sys.argv[0]}: {insn['dest']} is clobbered", file=sys.stderr)
             isRenamed = False
             renamedVar = insn["dest"] + "_lvn"  # This naming is probably not unique
             for n, v in num2Val.items():
@@ -52,8 +62,16 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
                         v[1][insn["dest"]] = False
                         v[1][renamedVar] = True
 
+            var2Num.pop(insn["dest"])
+
         if expr is None:
-            returnInstrs.append(insn)
+            updatedArgs = insn.copy()
+            if "args" in insn:
+                updatedArgs["args"] = [
+                    get_first_live(num2Val[var2Num[arg]][1]) if arg in var2Num else arg
+                    for arg in insn["args"]
+                ]
+            returnInstrs.append(updatedArgs)
             continue
 
         entry = (expr, OrderedDict({insn["dest"]: True}))
@@ -94,7 +112,7 @@ def blk_lvn(instrs: list[Any]) -> tuple[list[Any], bool]:
         if rewritten != insn:
             if show_lvn and "args" in rewritten and "args" in insn:
                 print(
-                    f"{sys.argv[0]}: Rewrote {insn['args']} to {rewritten['args']}",
+                    f"{sys.argv[0]}: Rewrote {insn['op']} {insn['args']} to {rewritten['op']} {rewritten['args']}",
                     file=sys.stderr,
                 )
             modified = True
@@ -125,7 +143,7 @@ if __name__ == "__main__":
     for f in brilProgram["functions"]:
         lvnBlks = []
         for b in list(to_blocks(f)):
-            lvnB = blk_lvn(b[1])[0]
+            lvnB = blk_lvn(b[1], f["args"] if "args" in f else [])[0]
             if len(lvnB) > 0:
                 lvnBlks.append((b[0], lvnB))
         outputFuncs.append(from_blocks(f, lvnBlks))

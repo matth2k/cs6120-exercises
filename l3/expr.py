@@ -149,8 +149,6 @@ class Value(Expr):
         self.type = type
 
     def fold(self, num2Val: dict[Value, tuple[Expr, Any]] = None) -> Expr:
-        if num2Val is not None and self in num2Val:
-            return num2Val[self][0].fold(num2Val)
         return Value(self.val, self.type)
 
     def __lt__(self, obj):
