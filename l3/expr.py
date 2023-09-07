@@ -50,7 +50,10 @@ class Expr(ABC):
             return {
                 "op": self.op,
                 "dest": dest,
-                "args": [get_first_live(num2Val[arg][1]) for arg in self.args],
+                "args": [
+                    get_first_live(num2Val[argN][1]) if argV != dest else argV
+                    for argN, argV in zip(self.args, oldArgs)
+                ],
                 "type": self.type,
             }
         raise Exception(f"Unhandled Expression {self}")
