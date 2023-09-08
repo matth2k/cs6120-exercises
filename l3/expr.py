@@ -97,14 +97,23 @@ class Expr(ABC):
 class BinaryExpr(Expr):
     binary_ops = {
         "add": lambda a, b: a + b,
+        "fadd": lambda a, b: a + b,
         "mul": lambda a, b: a * b,
+        "fmul": lambda a, b: a * b,
         "sub": lambda a, b: a - b,
+        "fsub": lambda a, b: a - b,
         "div": lambda a, b: a / b,
+        "fdiv": lambda a, b: a / b,
         "eq": lambda a, b: a == b,
+        "feq": lambda a, b: a == b,
         "lt": lambda a, b: a < b,
+        "flt": lambda a, b: a < b,
         "gt": lambda a, b: a > b,
+        "fgt": lambda a, b: a > b,
         "le": lambda a, b: a <= b,
+        "fle": lambda a, b: a <= b,
         "ge": lambda a, b: a >= b,
+        "fge": lambda a, b: a >= b,
         "and": lambda a, b: a and b,
         "or": lambda a, b: a or b,
     }
@@ -116,12 +125,11 @@ class BinaryExpr(Expr):
         self.type = type
 
     def fold(self, num2Val: dict[Value, tuple[Expr, Any]] = None) -> Expr:
-        if self.op in self.commutative_ops and self.type != "float":
-            newArgs = list(self.args).sort()
-            if newArgs is not None:
-                toTuple = tuple(newArgs)
-                if toTuple != self.args:
-                    return BinaryExpr(self.op, toTuple, self.type).fold(num2Val)
+        if self.op in self.commutative_ops:
+            if self.args[0] > self.args[1]:
+                return BinaryExpr(
+                    self.op, (self.args[1], self.args[0]), self.type
+                ).fold(num2Val)
 
         constOperands = []
         if num2Val is not None:
@@ -140,7 +148,14 @@ class BinaryExpr(Expr):
         elif True in constOperands and self.op == "or":
             return Const(True, self.type)
 
-        return BinaryExpr(self.op, self.args, self.type)
+        foldedArgs = []
+        for arg in self.args:
+            if isinstance(arg, Expr):
+                foldedArgs.append(arg.fold(num2Val))
+            else:
+                foldedArgs.append(arg)
+
+        return BinaryExpr(self.op, foldedArgs, self.type)
 
     def __str__(self) -> str:
         return f"{self.op} {self.args[0]}, {self.args[1]}"
@@ -199,6 +214,14 @@ class UnaryExpr(Expr):
         if len(constOperands) == 1:
             computed = self.unary_ops[self.op](constOperands[0])
             return Const(eval(f"{self.type}({computed})"), self.type)
+
+        foldedArgs = []
+        for arg in self.args:
+            if isinstance(arg, Expr):
+                foldedArgs.append(arg.fold(num2Val))
+            else:
+                foldedArgs.append(arg)
+        return UnaryExpr(self.op, foldedArgs, self.type)
 
     def __str__(self) -> str:
         return f"{self.op} {self.args[0]}"
