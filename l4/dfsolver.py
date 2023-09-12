@@ -19,12 +19,90 @@ def meet(l: list[set]) -> set:
     return set.intersection(*l)
 
 
+# Four helper functions for interval analysis
+def boundUnion(b1: tuple, b2: tuple[2]):
+    return (
+        min(b1[0], b2[0]) if b1[0] is not None and b2[0] is not None else None,
+        max(b1[1], b2[1]) if b1[0] is not None and b2[0] is not None else None,
+    )
+
+
+def boundMeet(l: list[set]) -> set:
+    p = l.pop()
+    while len(l) > 0:
+        mergedP = set()
+        q = l.pop()
+        for e in p:
+            for f in q:
+                if e[0] == f[0]:
+                    mergedP.add((e[0], boundUnion(e[1], f[1])))
+        p = mergedP
+    return p
+
+
+def boundJoin(l: list[set]) -> set:
+    p = l.pop()
+    while len(l) > 0:
+        mergedP = set()
+        q = l.pop()
+        for e in p:
+            added = False
+            for f in q:
+                if e[0] == f[0]:
+                    mergedP.add((e[0], boundUnion(e[1], f[1])))
+                    added = True
+                else:
+                    mergedP.add(f)
+            if not added:
+                mergedP.add(e)
+        p = mergedP
+    return p
+
+
+def boundTransfer(s, b) -> set:
+    consts = set()
+    # TODO: actually implement this
+    constantVars = b.get_definitions()
+    for c in constantVars:
+        consts.add((c, (1, 1)))
+    return boundJoin([s, consts])
+
+
 ANALYSES = {
     "liveness": DataFlow(
         merge=join,
+        # live_in = gen U (live_out - kill)
         transfer=lambda s, b: b.get_arguments().union(s.difference(b.get_kills())),
         init=lambda: set(),
         reverse=True,
+    ),
+    # TODO: need to use actual ops, not variable names
+    "reaching": DataFlow(
+        merge=join,
+        # reach_out = gen U (reach_in - kill)
+        transfer=lambda s, b: b.get_arguments().union(s.difference(b.get_kills())),
+        init=lambda: set(),
+        reverse=False,
+    ),
+    "constants": DataFlow(
+        merge=meet,
+        transfer=lambda s, b: b.get_constants().union(
+            s.difference(b.get_definitions().difference(b.get_constants()))
+        ),
+        init=lambda: set(),
+        reverse=False,
+    ),
+    "initialized": DataFlow(
+        merge=meet,
+        transfer=lambda s, b: b.get_definitions().union(s),
+        init=lambda: set(),
+        reverse=False,
+    ),
+    "interval": DataFlow(
+        merge=boundMeet,
+        transfer=boundTransfer,
+        init=lambda: set(),
+        reverse=False,
     ),
 }
 
@@ -74,6 +152,10 @@ if __name__ == "__main__":
         ins, outs = dataflow.solve(cfg, sys.stderr if args.verbose else None)
         print(f"  {func['name']}", file=args.output)
         for blk in cfg.get_blocks():
+            sortedIn = list(ins[blk.get_name()])
+            sortedIn.sort()
+            sortedOut = list(outs[blk.get_name()])
+            sortedOut.sort()
             print(f"    {blk.get_name()}", file=args.output)
-            print(f"      in: {ins[blk.get_name()]}", file=args.output)
-            print(f"      out: {outs[blk.get_name()]}", file=args.output)
+            print(f"      in: {sortedIn}", file=args.output)
+            print(f"      out: {sortedOut}", file=args.output)

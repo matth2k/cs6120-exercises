@@ -62,6 +62,16 @@ class Block:
 
         return kills
 
+    def get_constants(self) -> set[str]:
+        constants = set()
+        for insn in self.instrs:
+            if "dest" in insn:
+                if insn["op"] == "const":
+                    constants.add(insn["dest"])
+                else:
+                    constants.discard(insn["dest"])
+        return constants
+
 
 class CFG:
     def __init__(self, func: Any) -> None:
