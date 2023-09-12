@@ -15,7 +15,7 @@ class DataFlow:
         self.init = init
         self.reverse = reverse
 
-    def solve(self, cfg: CFG) -> tuple[dict[str, set], dict[str, set]]:
+    def solve(self, cfg: CFG, verbosef=None) -> tuple[dict[str, set], dict[str, set]]:
         blocks = cfg.get_blocks()
         predecessors = cfg.get_predecessors()
         successors = cfg.get_cfg()
@@ -59,6 +59,13 @@ class DataFlow:
 
             newOut = self.transfer(updatedInput, b)
             if newOut != oldOutput:
+                if verbosef is not None:
+                    print(
+                        f"dataflow.py: Nontrivial transfer on {b.get_name()}",
+                        file=verbosef,
+                    )
+                    print(f"  before: {oldOutput}", file=verbosef)
+                    print(f"  after: {newOut}", file=verbosef)
                 for s in (
                     successors[b.get_name()]
                     if not self.reverse

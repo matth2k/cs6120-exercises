@@ -6,9 +6,6 @@ from typing import Any
 from butils.cfg import *
 from butils.dataflow import *
 
-side_effects = []
-show_deleted = False
-
 
 def join(l: list[set]) -> set:
     if len(l) == 0:
@@ -22,12 +19,29 @@ def meet(l: list[set]) -> set:
     return set.intersection(*l)
 
 
+ANALYSES = {
+    "liveness": DataFlow(
+        merge=join,
+        transfer=lambda s, b: b.get_arguments().union(s.difference(b.get_kills())),
+        init=lambda: set(),
+        reverse=True,
+    ),
+}
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--no-out-dep", dest="out_dep", action="store_false")
-    parser.add_argument("--no-use-dep", dest="use_dep", action="store_false")
     parser.add_argument(
         "-v", "--verbose", dest="verbose", default=False, action="store_true"
+    )
+    parser.add_argument(
+        "-a",
+        "--analysis",
+        dest="analysis",
+        type=str,
+        default="liveness",
+        action="store",
+        help="dataflow anaylsis to run",
     )
     parser.add_argument(
         "input", nargs="?", type=argparse.FileType("r"), default=sys.stdin
@@ -36,27 +50,28 @@ if __name__ == "__main__":
         "output", nargs="?", type=argparse.FileType("w"), default=sys.stdout
     )
     args = parser.parse_args()
-    if args.verbose:
-        show_deleted = True
+    if args.analysis not in ANALYSES:
+        print(f"Invalid analysis option --analysis {args.analysis}", file=sys.stderr)
+        sys.exit(1)
 
     brilProgram = json.load(args.input)
 
-    def getLives(s, b):
-        returnVal = b.get_arguments().union(s.difference(b.get_kills()))
-        print(f"{b.get_name()} {s}", file=args.output)
-        print(f"{b.get_name()} {returnVal}", file=args.output)
-        return returnVal
-
-    dataflowLive = DataFlow(
-        merge=lambda l: join(l),
-        transfer=getLives,
-        init=lambda: set(),
-        reverse=True,
-    )
+    dataflow = ANALYSES[args.analysis]
+    if args.verbose:
+        print(f"{sys.argv[0]}: Running analysis {args.analysis}", file=sys.stderr)
+        print(f"{sys.argv[0]}: merge = {dataflow.merge.__name__}", file=sys.stderr)
+        print(
+            f'{sys.argv[0]}: transfer = "{dataflow.transfer.__name__}"', file=sys.stderr
+        )
+        print(f'{sys.argv[0]}: init = "{dataflow.transfer.__name__}"', file=sys.stderr)
+        print(
+            f'{sys.argv[0]}: direction = {"forward" if not dataflow.reverse else "backwards"}',
+            file=sys.stderr,
+        )
     print("functions", file=args.output)
     for func in brilProgram["functions"]:
         cfg = CFG(func)
-        ins, outs = dataflowLive.solve(cfg)
+        ins, outs = dataflow.solve(cfg, sys.stderr if args.verbose else None)
         print(f"  {func['name']}", file=args.output)
         for blk in cfg.get_blocks():
             print(f"    {blk.get_name()}", file=args.output)
