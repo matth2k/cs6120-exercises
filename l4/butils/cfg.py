@@ -19,17 +19,6 @@ class Block:
     def get_terminator(self) -> Any:
         return self.instrs[-1].copy()
 
-    def get_live_vars(self) -> set[str]:
-        strSet = set()
-        for insn in self.instrs:
-            if "op" in insn:
-                if "dest" in insn:
-                    strSet.add(insn["dest"])
-                if "args" in insn:
-                    for arg in insn["args"]:
-                        strSet.add(arg)
-        return strSet
-
     def copy(self) -> Block:
         return Block(self.name, self.instrs.copy())
 
@@ -38,6 +27,40 @@ class Block:
 
     def __repr__(self) -> str:
         return self.name
+
+    def get_definitions(self) -> set[str]:
+        defined = set()
+        for insn in self.instrs:
+            if "dest" in insn:
+                defined.add(insn["dest"])
+        return defined
+
+    def get_arguments(self) -> set[str]:
+        defined = set()
+        args = set()
+        for insn in self.instrs:
+            if "args" in insn:
+                for arg in insn["args"]:
+                    if arg not in defined:
+                        args.add(arg)
+
+            if "dest" in insn:
+                defined.add(insn["dest"])
+        return args
+
+    def get_kills(self) -> set[str]:
+        used = set()
+        kills = set()
+        for insn in self.instrs:
+            if "args" in insn:
+                for arg in insn["args"]:
+                    used.add(arg)
+
+            if "dest" in insn:
+                if insn["dest"] not in used:
+                    kills.add(insn["dest"])
+
+        return kills
 
 
 class CFG:

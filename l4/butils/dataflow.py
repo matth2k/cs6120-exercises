@@ -8,33 +8,66 @@ class DataFlow:
         merge: Callable[[list[set]], set],
         transfer: Callable[[set, Block], set],
         init: Callable[[], set],
+        reverse: bool = False,
     ) -> None:
         self.merge = merge
         self.transfer = transfer
         self.init = init
+        self.reverse = reverse
 
-    def solve(self, cfg: CFG) -> set:
+    def solve(self, cfg: CFG) -> tuple[dict[str, set], dict[str, set]]:
         blocks = cfg.get_blocks()
         predecessors = cfg.get_predecessors()
         successors = cfg.get_cfg()
-        ins = {blocks[0].get_name(): self.init()}
-        outs = {block.get_name(): self.init() for block in blocks}
+        entry = blocks[0]
         sink = cfg.get_sink()
-
+        ins = {}
+        outs = {}
+        if not self.reverse:
+            ins = {entry.get_name(): self.init()}
+            outs = {block.get_name(): self.init() for block in blocks}
+        else:
+            outs = {sink.get_name(): self.init()}
+            ins = {block.get_name(): self.init() for block in blocks}
         # Why do we need to interate over the blocks?
         # Meet over all paths I think?
         worklist = blocks
         while len(worklist) > 0:
             b = worklist.pop()
             setsToMerge = []
-            for p in predecessors[b.get_name()]:
-                setsToMerge.append(outs[p.get_name()])
-            ins[b.get_name()] = self.merge(setsToMerge)
-            newOut = self.transfer(ins[b.get_name()], b)
-            if newOut != outs[b.get_name()]:
-                for s in successors[b.get_name()]:
+            toVisit = (
+                predecessors[b.get_name()]
+                if not self.reverse
+                else successors[b.get_name()]
+            )
+            for p in toVisit:
+                setsToMerge.append(
+                    outs[p.get_name()] if not self.reverse else ins[p.get_name()]
+                )
+            updatedInput = None
+            oldOutput = None
+            if not self.reverse:
+                if len(setsToMerge) > 0:
+                    ins[b.get_name()] = self.merge(setsToMerge)
+                updatedInput = ins[b.get_name()]
+                oldOutput = outs[b.get_name()]
+            else:
+                if len(setsToMerge) > 0:
+                    outs[b.get_name()] = self.merge(setsToMerge)
+                updatedInput = outs[b.get_name()]
+                oldOutput = ins[b.get_name()]
+
+            newOut = self.transfer(updatedInput, b)
+            if newOut != oldOutput:
+                for s in (
+                    successors[b.get_name()]
+                    if not self.reverse
+                    else predecessors[b.get_name()]
+                ):
                     worklist.append(s)
+            if not self.reverse:
+                outs[b.get_name()] = newOut
+            else:
+                ins[b.get_name()] = newOut
 
-            outs[b.get_name()] = newOut
-
-        return outs[sink.get_name()]
+        return ins, outs

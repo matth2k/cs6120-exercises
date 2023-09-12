@@ -11,10 +11,14 @@ show_deleted = False
 
 
 def join(l: list[set]) -> set:
+    if len(l) == 0:
+        raise Exception("Cannot merge empty list of sets")
     return set().union(*l)
 
 
 def meet(l: list[set]) -> set:
+    if len(l) == 0:
+        raise Exception("Cannot merge empty list of sets")
     return set.intersection(*l)
 
 
@@ -37,12 +41,24 @@ if __name__ == "__main__":
 
     brilProgram = json.load(args.input)
 
+    def getLives(s, b):
+        returnVal = b.get_arguments().union(s.difference(b.get_kills()))
+        print(f"{b.get_name()} {s}", file=args.output)
+        print(f"{b.get_name()} {returnVal}", file=args.output)
+        return returnVal
+
     dataflowLive = DataFlow(
         merge=lambda l: join(l),
-        transfer=lambda s, b: s.union(b.get_live_vars()),
+        transfer=getLives,
         init=lambda: set(),
+        reverse=True,
     )
+    print("functions", file=args.output)
     for func in brilProgram["functions"]:
         cfg = CFG(func)
-        liveVars = dataflowLive.solve(cfg)
-        print(liveVars, file=args.output)
+        ins, outs = dataflowLive.solve(cfg)
+        print(f"  {func['name']}", file=args.output)
+        for blk in cfg.get_blocks():
+            print(f"    {blk.get_name()}", file=args.output)
+            print(f"      in: {ins[blk.get_name()]}", file=args.output)
+            print(f"      out: {outs[blk.get_name()]}", file=args.output)
