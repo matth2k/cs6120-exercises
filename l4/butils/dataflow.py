@@ -34,6 +34,8 @@ class DataFlow:
         worklist = blocks
         while len(worklist) > 0:
             b = worklist.pop()
+            if verbosef is not None:
+                print(f"dataflow.py: Visiting {b.get_name()}", file=verbosef)
             setsToMerge = []
             toVisit = (
                 predecessors[b.get_name()]

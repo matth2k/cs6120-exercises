@@ -4,6 +4,43 @@ from typing import Generator, Any
 BRANCH_OPS = ["br", "jmp"]
 TERM_OPS = ["ret", "br", "jmp"]
 
+BINARY_OPS = {
+    "add": lambda a, b: a + b,
+    "fadd": lambda a, b: a + b,
+    "mul": lambda a, b: a * b,
+    "fmul": lambda a, b: a * b,
+    "sub": lambda a, b: a - b,
+    "fsub": lambda a, b: a - b,
+    "div": lambda a, b: a / b,
+    "fdiv": lambda a, b: a / b,
+    "eq": lambda a, b: a == b,
+    "feq": lambda a, b: a == b,
+    "lt": lambda a, b: a < b,
+    "flt": lambda a, b: a < b,
+    "gt": lambda a, b: a > b,
+    "fgt": lambda a, b: a > b,
+    "le": lambda a, b: a <= b,
+    "fle": lambda a, b: a <= b,
+    "ge": lambda a, b: a >= b,
+    "fge": lambda a, b: a >= b,
+    "and": lambda a, b: a and b,
+    "or": lambda a, b: a or b,
+}
+
+MONO_INCR_OPS = {
+    "add": lambda a, b: a + b,
+    "fadd": lambda a, b: a + b,
+    "mul": lambda a, b: a * b,
+    "fmul": lambda a, b: a * b,
+}
+
+MONO_DECR_OPS = {
+    "sub": lambda a, b: a - b,
+    "fsub": lambda a, b: a - b,
+    "div": lambda a, b: a / b,
+    "fdiv": lambda a, b: a / b,
+}
+
 
 class Block:
     def __init__(self, name: str, instrs: list[Any]) -> None:
@@ -71,6 +108,68 @@ class Block:
                 else:
                     constantVals[insn["dest"]] = None
         return constantVals
+
+    def get_constant_intervals(
+        self, intervals: dict[str, tuple[Any, Any]] = {}
+    ) -> dict[str, tuple[Any, Any]]:
+        updatedIntervals = intervals.copy()
+        for insn in self.instrs:
+            if "dest" in insn:
+                if insn["op"] == "const":
+                    updatedIntervals[insn["dest"]] = (insn["value"], insn["value"])
+                elif (
+                    insn["op"] in MONO_INCR_OPS
+                    and insn["args"][0] in updatedIntervals
+                    and insn["args"][1] in updatedIntervals
+                ):
+                    operation = MONO_INCR_OPS[insn["op"]]
+                    arg0 = insn["args"][0]
+                    arg1 = insn["args"][1]
+                    lb = (
+                        None
+                        if updatedIntervals[arg0][0] is None
+                        or updatedIntervals[arg1][0] is None
+                        else operation(
+                            updatedIntervals[arg0][0], updatedIntervals[arg1][0]
+                        )
+                    )
+                    ub = (
+                        None
+                        if updatedIntervals[arg0][1] is None
+                        or updatedIntervals[arg1][1] is None
+                        else operation(
+                            updatedIntervals[arg0][1], updatedIntervals[arg1][1]
+                        )
+                    )
+                    updatedIntervals[insn["dest"]] = (lb, ub)
+                elif (
+                    insn["op"] in MONO_DECR_OPS
+                    and insn["args"][0] in updatedIntervals
+                    and insn["args"][1] in updatedIntervals
+                ):
+                    operation = MONO_DECR_OPS[insn["op"]]
+                    arg0 = insn["args"][0]
+                    arg1 = insn["args"][1]
+                    lb = (
+                        None
+                        if updatedIntervals[arg0][0] is None
+                        or updatedIntervals[arg1][1] is None
+                        else operation(
+                            updatedIntervals[arg0][0], updatedIntervals[arg1][1]
+                        )
+                    )
+                    ub = (
+                        None
+                        if updatedIntervals[arg0][1] is None
+                        or updatedIntervals[arg1][0] is None
+                        else operation(
+                            updatedIntervals[arg0][1], updatedIntervals[arg1][0]
+                        )
+                    )
+                    updatedIntervals[insn["dest"]] = (lb, ub)
+                else:
+                    updatedIntervals[insn["dest"]] = (None, None)
+        return updatedIntervals
 
 
 class CFG:

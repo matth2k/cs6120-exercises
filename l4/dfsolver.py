@@ -19,56 +19,28 @@ def meet(l: list[set]) -> set:
     return set.intersection(*l)
 
 
-# Four helper functions for interval analysis
+# Helper functions for interval analysis
 def boundUnion(b1: tuple, b2: tuple[2]):
     return (
         min(b1[0], b2[0]) if b1[0] is not None and b2[0] is not None else None,
-        max(b1[1], b2[1]) if b1[0] is not None and b2[0] is not None else None,
+        max(b1[1], b2[1]) if b1[1] is not None and b2[1] is not None else None,
     )
 
 
-def boundMeet(l: list[set]) -> set:
-    p = l.pop()
+def boundJoin(l: list[dict[str, tuple[Any, Any]]]) -> dict[str, tuple[Any, Any]]:
+    d = l.pop()
     while len(l) > 0:
-        mergedP = set()
         q = l.pop()
-        for e in p:
-            for f in q:
-                if e[0] == f[0]:
-                    mergedP.add((e[0], boundUnion(e[1], f[1])))
-        p = mergedP
-    return p
+        for k, v in q.items():
+            if k in d:
+                d[k] = boundUnion(d[k], v)
+            else:
+                d[k] = v
+
+    return d
 
 
-def boundJoin(l: list[set]) -> set:
-    p = l.pop()
-    while len(l) > 0:
-        mergedP = set()
-        q = l.pop()
-        for e in p:
-            added = False
-            for f in q:
-                if e[0] == f[0]:
-                    mergedP.add((e[0], boundUnion(e[1], f[1])))
-                    added = True
-                else:
-                    mergedP.add(f)
-            if not added:
-                mergedP.add(e)
-        p = mergedP
-    return p
-
-
-def boundTransfer(s, b) -> set:
-    consts = set()
-    # TODO: actually implement this
-    constantVars = b.get_definitions()
-    for c in constantVars:
-        consts.add((c, (1, 1)))
-    return boundJoin([s, consts])
-
-
-# Helper for constant propagation
+# Helpers for constant propagation
 def constTransfer(s, b) -> dict[str, Any]:
     scopy = s.copy()
     scopy.update(b.get_constants())
@@ -122,11 +94,10 @@ ANALYSES = {
         init=lambda: set(),
         reverse=False,
     ),
-    # TODO: implement
     "interval": DataFlow(
-        merge=boundMeet,
-        transfer=boundTransfer,
-        init=lambda: set(),
+        merge=boundJoin,
+        transfer=lambda s, b: b.get_constant_intervals(s),
+        init=lambda: dict(),
         reverse=False,
     ),
 }
