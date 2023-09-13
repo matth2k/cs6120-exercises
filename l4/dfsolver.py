@@ -60,6 +60,27 @@ def constMeet(l: list[dict[str, Any]]) -> dict[str, Any]:
     return p
 
 
+# Helper functions for reaching definitions
+def reachingJoin(l: list[dict[str, list]]) -> dict[str, list]:
+    d = l.pop()
+    while len(l) > 0:
+        q = l.pop()
+        for k, v in q.items():
+            if k in d:
+                d[k] = d[k] + v
+            else:
+                d[k] = v
+    return d
+
+
+def reachingTransfer(s: dict[str, list], b):
+    scopy = s.copy()
+    killing_defs = b.get_killing_definitions()
+    for k, v in killing_defs.items():
+        scopy[k] = [v]
+    return scopy
+
+
 ANALYSES = {
     "liveness": DataFlow(
         merge=join,
@@ -68,12 +89,11 @@ ANALYSES = {
         init=lambda: set(),
         reverse=True,
     ),
-    # TODO: need to use actual ops, not variable names
     "reaching": DataFlow(
-        merge=join,
+        merge=reachingJoin,
         # reach_out = gen U (reach_in - kill)
-        transfer=lambda s, b: b.get_arguments().union(s.difference(b.get_kills())),
-        init=lambda: set(),
+        transfer=reachingTransfer,
+        init=lambda: dict(),
         reverse=False,
     ),
     "defined": DataFlow(
@@ -102,6 +122,8 @@ ANALYSES = {
     ),
 }
 
+HELP_MSG = "There are 6 analyses available:\n'liveness' Live variable analysis\n'reaching' Reaching definitions analysis\n'defined' Get posibly defined variables\n'constants' Constant propagation anaylsis\n'initialized' Get guaranteed initialized variables\n'interval' Interval analysis"
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -115,7 +137,7 @@ if __name__ == "__main__":
         type=str,
         default="liveness",
         action="store",
-        help="dataflow anaylsis to run",
+        help=HELP_MSG,
     )
     parser.add_argument(
         "input", nargs="?", type=argparse.FileType("r"), default=sys.stdin

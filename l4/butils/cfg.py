@@ -42,6 +42,28 @@ MONO_DECR_OPS = {
 }
 
 
+class Instruction:
+    def __init__(self, insn: Any) -> None:
+        self.insn = insn
+        self.op = insn["op"] if "op" in insn else ""
+        self.args = ""
+        if "args" in insn:
+            for arg in insn["args"]:
+                self.args += f"{arg} "
+        if "value" in insn:
+            self.args += f" {insn['value']}"
+        self.dest = insn["dest"] if "dest" in insn else ""
+
+    def __eq__(self, other) -> bool:
+        return isinstance(other, Instruction) and self.insn == other.insn
+
+    def __str__(self) -> str:
+        return f"{self.op} {self.args}"
+
+    def __repr__(self) -> str:
+        return f"{self.op} {self.args}"
+
+
 class Block:
     def __init__(self, name: str, instrs: list[Any]) -> None:
         self.name = name
@@ -66,10 +88,13 @@ class Block:
         return self.name
 
     def get_definitions(self) -> set[str]:
-        defined = set()
+        return set(self.get_definitions_dict().keys())
+
+    def get_definitions_dict(self) -> dict[str, Any]:
+        defined = {}
         for insn in self.instrs:
             if "dest" in insn:
-                defined.add(insn["dest"])
+                defined[insn["dest"]] = Instruction(insn)
         return defined
 
     def get_arguments(self) -> set[str]:
@@ -86,8 +111,11 @@ class Block:
         return args
 
     def get_kills(self) -> set[str]:
+        return set(self.get_killing_definitions().keys())
+
+    def get_killing_definitions(self) -> dict[str, Any]:
         used = set()
-        kills = set()
+        kills = {}
         for insn in self.instrs:
             if "args" in insn:
                 for arg in insn["args"]:
@@ -95,7 +123,7 @@ class Block:
 
             if "dest" in insn:
                 if insn["dest"] not in used:
-                    kills.add(insn["dest"])
+                    kills[insn["dest"]] = Instruction(insn)
 
         return kills
 
