@@ -62,15 +62,15 @@ class Block:
 
         return kills
 
-    def get_constants(self) -> set[str]:
-        constants = set()
+    def get_constants(self) -> dict[str, Any]:
+        constantVals = {}
         for insn in self.instrs:
             if "dest" in insn:
                 if insn["op"] == "const":
-                    constants.add(insn["dest"])
+                    constantVals[insn["dest"]] = insn["value"]
                 else:
-                    constants.discard(insn["dest"])
-        return constants
+                    constantVals[insn["dest"]] = None
+        return constantVals
 
 
 class CFG:

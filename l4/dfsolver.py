@@ -68,6 +68,26 @@ def boundTransfer(s, b) -> set:
     return boundJoin([s, consts])
 
 
+# Helper for constant propagation
+def constTransfer(s, b) -> dict[str, Any]:
+    scopy = s.copy()
+    scopy.update(b.get_constants())
+    return scopy
+
+
+def constMeet(l: list[dict[str, Any]]) -> dict[str, Any]:
+    p = l.pop()
+    while len(l) > 0:
+        q = l.pop()
+        for k, v in q.items():
+            if k in p:
+                if p[k] != v:
+                    p[k] = None
+            else:
+                p[k] = v
+    return p
+
+
 ANALYSES = {
     "liveness": DataFlow(
         merge=join,
@@ -84,12 +104,16 @@ ANALYSES = {
         init=lambda: set(),
         reverse=False,
     ),
-    "constants": DataFlow(
-        merge=meet,
-        transfer=lambda s, b: b.get_constants().union(
-            s.difference(b.get_definitions().difference(b.get_constants()))
-        ),
+    "defined": DataFlow(
+        merge=join,
+        transfer=lambda s, b: b.get_definitions().union(s),
         init=lambda: set(),
+        reverse=False,
+    ),
+    "constants": DataFlow(
+        merge=constMeet,
+        transfer=constTransfer,
+        init=lambda: dict(),
         reverse=False,
     ),
     "initialized": DataFlow(
@@ -98,6 +122,7 @@ ANALYSES = {
         init=lambda: set(),
         reverse=False,
     ),
+    # TODO: implement
     "interval": DataFlow(
         merge=boundMeet,
         transfer=boundTransfer,
@@ -152,10 +177,6 @@ if __name__ == "__main__":
         ins, outs = dataflow.solve(cfg, sys.stderr if args.verbose else None)
         print(f"  {func['name']}", file=args.output)
         for blk in cfg.get_blocks():
-            sortedIn = list(ins[blk.get_name()])
-            sortedIn.sort()
-            sortedOut = list(outs[blk.get_name()])
-            sortedOut.sort()
             print(f"    {blk.get_name()}", file=args.output)
-            print(f"      in: {sortedIn}", file=args.output)
-            print(f"      out: {sortedOut}", file=args.output)
+            print(f"      in: {ins[blk.get_name()]}", file=args.output)
+            print(f"      out: {outs[blk.get_name()]}", file=args.output)

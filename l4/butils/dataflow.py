@@ -77,4 +77,20 @@ class DataFlow:
             else:
                 ins[b.get_name()] = newOut
 
-        return ins, outs
+        # Add optinal sort of sets for better printing
+        useSorted = True
+        inClone = {}
+        outClone = {}
+        for k, v in ins.items():
+            sortedV = sorted(list(v))
+            if sortedV is None or isinstance(v, dict):
+                useSorted = False
+                break
+            inClone[k] = sortedV
+        for k, v in outs.items():
+            sortedV = sorted(list(v))
+            if sortedV is None or isinstance(v, dict):
+                useSorted = False
+                break
+            outClone[k] = sortedV
+        return (ins, outs) if not useSorted else (inClone, outClone)
