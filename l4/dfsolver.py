@@ -76,7 +76,11 @@ def reachingJoin(l: list[dict[str, list]]) -> dict[str, list]:
 def reachingTransfer(s: dict[str, list], b):
     scopy = s.copy()
     killing_defs = b.get_killing_definitions()
-    for k, v in killing_defs.items():
+    for k, _ in killing_defs.items():
+        if k in scopy:
+            scopy.pop(k, None)
+
+    for k, v in b.get_definitions_dict().items():
         scopy[k] = [v]
     return scopy
 
