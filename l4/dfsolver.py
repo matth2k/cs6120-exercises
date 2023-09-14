@@ -61,19 +61,19 @@ def constMeet(l: list[dict[str, Any]]) -> dict[str, Any]:
 
 
 # Helper functions for reaching definitions
-def reachingJoin(l: list[dict[str, list]]) -> dict[str, list]:
+def reachingJoin(l: list[dict[str, set]]) -> dict[str, set]:
     d = l.pop()
     while len(l) > 0:
         q = l.pop()
         for k, v in q.items():
             if k in d:
-                d[k] = d[k] + v
+                d[k].union(v)
             else:
                 d[k] = v
     return d
 
 
-def reachingTransfer(s: dict[str, list], b):
+def reachingTransfer(s: dict[str, set], b):
     scopy = s.copy()
     killing_defs = b.get_killing_definitions()
     for k, _ in killing_defs.items():
@@ -81,7 +81,7 @@ def reachingTransfer(s: dict[str, list], b):
             scopy.pop(k, None)
 
     for k, v in b.get_definitions_dict().items():
-        scopy[k] = [v]
+        scopy[k] = set([v])
     return scopy
 
 

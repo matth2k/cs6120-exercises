@@ -1,5 +1,6 @@
 from __future__ import annotations
 from typing import Generator, Any
+import json
 
 BRANCH_OPS = ["br", "jmp"]
 TERM_OPS = ["ret", "br", "jmp"]
@@ -63,6 +64,9 @@ class Instruction:
     def __repr__(self) -> str:
         return f"{self.op} {self.args}"
 
+    def __hash__(self):
+        return hash(json.dumps(self.insn))
+
 
 class Block:
     def __init__(self, name: str, instrs: list[Any]) -> None:
@@ -76,7 +80,12 @@ class Block:
         return self.instrs.copy()
 
     def get_terminator(self) -> Any:
-        return self.instrs[-1].copy()
+        ind = len(self.instrs) - 1
+        while "label" in self.instrs[ind] and ind > 0:
+            ind -= 1
+        if "label" in self.instrs[ind]:
+            return None
+        return self.instrs[ind].copy()
 
     def copy(self) -> Block:
         return Block(self.name, self.instrs.copy())
@@ -292,13 +301,12 @@ class CFG:
         lastBlock = None
         for blk in self.blocks:
             term = blk.get_terminator()
-            if "op" not in term:
-                raise Exception(f"bad terminator {term}")
-
             if lastBlock is not None:
                 yield lastBlock, blk.get_name()
 
-            if term["op"] in BRANCH_OPS:
+            if term is None:
+                lastBlock = blk.get_name()
+            elif term["op"] in BRANCH_OPS:
                 for branch in term["labels"]:
                     yield blk.get_name(), branch
                 lastBlock = None
