@@ -19,6 +19,8 @@ class DataFlow:
         blocks = cfg.get_blocks()
         predecessors = cfg.get_predecessors()
         successors = cfg.get_cfg()
+        if verbosef is not None:
+            print(f"dataflow.py: Input CFG {successors}", file=verbosef)
         entry = blocks[0]
         sink = cfg.get_sink()
         ins = {}
