@@ -78,3 +78,28 @@ class Dominance:
 
     def immediately_dominates(self, a: Block, i: Block) -> bool:
         return i in self.idom[a.get_name()]
+
+    def verify(self) -> bool:
+        successors = self.cfg.get_cfg()
+        blocks = self.cfg.get_blocks()
+        # A dominates B means iff all paths rooted at Entry containing B, also contains A
+
+        # Do a DFS
+        visited = set()
+        list = deque()
+        list.append([blocks[0]])
+        while len(list) > 0:
+            path = list.popleft()
+            d = path[-1]
+
+            for p in path:
+                for b in blocks:
+                    if self.dominates(b, p) and not b in path:
+                        return False
+
+            visited.add(d)
+            for s in successors[d.get_name()]:
+                if s not in visited:
+                    list.append(path + [s])
+
+        return True

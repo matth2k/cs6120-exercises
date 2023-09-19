@@ -12,6 +12,9 @@ if __name__ == "__main__":
         "-v", "--verbose", dest="verbose", default=False, action="store_true"
     )
     parser.add_argument(
+        "-g", "--verify", dest="verify", default=False, action="store_true"
+    )
+    parser.add_argument(
         "input", nargs="?", type=argparse.FileType("r"), default=sys.stdin
     )
     parser.add_argument(
@@ -27,3 +30,9 @@ if __name__ == "__main__":
         cfg = CFG(func)
         domInfo = Dominance(cfg)
         print(f"    {domInfo.get_dom_tree()}", file=args.output)
+        if args.verify:
+            if not domInfo.verify():
+                print(
+                    f"Dominance incorrect for function {func['name']}", file=sys.stderr
+                )
+                sys.exit(1)
