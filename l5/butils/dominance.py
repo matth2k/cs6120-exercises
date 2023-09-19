@@ -76,5 +76,5 @@ class Dominance:
     def strictly_dominates(self, a: Block, i: Block) -> bool:
         return self.dominates(a, i) and a != i
 
-    def get_idom(self, b: Block) -> Block:
-        return self.idom[b.get_name()].copy()
+    def immediately_dominates(self, a: Block, i: Block) -> bool:
+        return i in self.idom[a.get_name()]
