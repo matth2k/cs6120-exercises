@@ -5,36 +5,76 @@ from butils.cfg import Block, CFG
 class Dominance:
     def __init__(self, cfg: CFG) -> None:
         self.cfg = cfg
-        blocks = cfg.get_blocks()
-        predecessors = cfg.get_predecessors()
-        successors = cfg.get_cfg()
-        self.domTree: dict[str, set] = {}
 
         # Do process of elimination, so initialize all blocks to dominated by every other
-        self.domTree[blocks[0].get_name()] = {blocks[0]}
+        blocks = cfg.get_blocks()
+        predecessors = cfg.get_predecessors()
+        self.dom: dict[str, set] = {}
+        self.dom[blocks[0].get_name()] = {blocks[0]}
         worklist = blocks.copy()
         worklist.remove(blocks[0])
         for b in worklist:
-            self.domTree[b.get_name()] = set()
+            self.dom[b.get_name()] = set(blocks)
 
-        while True:
-            changed = False
+        changing = True
+        while changing:
+            changing = False
             for b in worklist:
-                precedingDom = set()
+                precedingDom = set(blocks)
                 for p in predecessors[b.get_name()]:
-                    precedingDom = precedingDom.intersection(self.domTree[p.get_name()])
+                    precedingDom = precedingDom.intersection(self.dom[p.get_name()])
                 updatedDom = precedingDom.union(set([b]))
-                if updatedDom != self.domTree[b.get_name()]:
-                    changed = True
-                    self.domTree[b.get_name()] = updatedDom
-            if not changed:
-                return
+                if updatedDom != self.dom[b.get_name()]:
+                    changing = True
+                    self.dom[b.get_name()] = updatedDom
 
-    def get_dom_tree(self) -> dict[str, list]:
+        # We have dominators now. Now do dominance Frontiers
+        self.domFrontier: dict[str, set] = {}
+        successors = cfg.get_cfg()
+        for b in blocks:
+            self.domFrontier[b.get_name()] = set()
+            for dominator in self.dom[b.get_name()]:
+                for s in successors[b.get_name()]:
+                    if not self.strictly_dominates(dominator, s):
+                        self.domFrontier[b.get_name()].add(s)
+
+        # Finally, do dominator tree
+        self.idom: dict[str, set] = {}
+        for b in blocks:
+            self.idom[b.get_name()] = set()
+            for j in blocks:
+                if not self.strictly_dominates(b, j):
+                    continue
+
+                # If k strictly dominates j, then it must also dom b, if b were the idom
+                isIdom = True
+                for k in blocks:
+                    if self.strictly_dominates(k, j) and not self.dominates(k, b):
+                        isIdom = False
+                        break
+
+                if not isIdom:
+                    continue
+
+                self.idom[b.get_name()].add(j)
+
+    def get_dom_tree(self) -> dict[str, set]:
         cpyTree = {}
-        for k, v in self.domTree.items():
+        for k, v in self.idom.items():
             cpyTree[k] = list(v)
         return cpyTree
 
+    def get_dom_frontier(self) -> dict[str, list]:
+        cpyFront = {}
+        for k, v in self.domFrontier.items():
+            cpyFront[k] = list(v)
+        return cpyFront
+
     def dominates(self, a: Block, i: Block) -> bool:
-        return i in self.domTree[a.get_name()]
+        return a in self.dom[i.get_name()]
+
+    def strictly_dominates(self, a: Block, i: Block) -> bool:
+        return self.dominates(a, i) and a != i
+
+    def get_idom(self, b: Block) -> Block:
+        return self.idom[b.get_name()].copy()
