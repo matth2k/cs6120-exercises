@@ -85,11 +85,11 @@ class Dominance:
         # A dominates B means iff all paths rooted at Entry containing B, also contains A
 
         # Do a DFS
-        visited = set()
         list = deque()
         list.append([blocks[0]])
         while len(list) > 0:
             path = list.popleft()
+            print(path)
             d = path[-1]
 
             for p in path:
@@ -97,9 +97,9 @@ class Dominance:
                     if self.dominates(b, p) and not b in path:
                         return False
 
-            visited.add(d)
             for s in successors[d.get_name()]:
-                if s not in visited:
+                # Finds all cycles
+                if s not in path:
                     list.append(path + [s])
 
         return True
