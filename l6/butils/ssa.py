@@ -38,7 +38,7 @@ class SSABlock(Block):
                     break
                 i += 1
 
-            if not placed and self.get_terminator() is not None:
+            if not placed:
                 self.instrs.insert(i, insn.insn)
 
     def rename_phi_node(self, var: tuple[str, Any], ssa_name: str) -> None:

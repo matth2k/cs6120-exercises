@@ -258,8 +258,8 @@ class CFG:
             else:
                 raise Exception(f"bad Instruction {insn}")
 
-        if "type" in func and len(cblk) > 0:
-            raise Exception(f"Func did not end on terminator")
+        # if "type" in func and len(cblk) > 0:
+        #     raise Exception(f"Func did not end on terminator {func}")
 
         cblk += labelStack
         if len(cblk) > 0:
