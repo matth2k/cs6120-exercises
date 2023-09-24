@@ -108,9 +108,9 @@ class SSA:
             self.has_def_inside[k] = list(self.has_def_inside[k])
 
         # Add args to set of variables
-        if "args" in cfg.func:
-            for arg in cfg.func["args"]:
-                self.variables.add(arg["name"])
+        # if "args" in cfg.func:
+        #     for arg in cfg.func["args"]:
+        #         self.variables.add(arg["name"])
 
         # Create SSA blocks
         for blk in self.blocks:
@@ -132,9 +132,9 @@ class SSA:
         self.ssa_names = {}
         self.ssa_name_stem = {}
         for var in self.variables:
-            self.ssa_names[var[0]] = [(var[0] + ".0", 0)]
-            self.ssa_name_stem[var[0] + ".0"] = var[0]
-            self.ssa_name_stem[var[0]] = var[0]
+            self.ssa_names[var[0]] = []
+        #     self.ssa_name_stem[var[0] + ".0"] = var[0]
+        #     self.ssa_name_stem[var[0]] = var[0]
 
         for _, ssa_blk in self.ssa_blocks.items():
             ssa_blk.update_with_phi_nodes()
@@ -150,37 +150,46 @@ class SSA:
             # Remap args
             if "args" in insn:
                 for i in range(len(insn["args"])):
+                    if insn["args"][i] not in self.ssa_name_stem:
+                        continue
                     arg = self.ssa_name_stem[insn["args"][i]]
                     if arg in self.ssa_names:
                         insn["args"][i] = self.ssa_names[arg][-1][0]
 
             # SSA rename the dest
             if "dest" in insn:
-                name_stem = self.ssa_name_stem[insn["dest"]]
-                _, old_index = self.ssa_names[name_stem][-1]
+                name_stem = (
+                    self.ssa_name_stem[insn["dest"]]
+                    if insn["dest"] in self.ssa_name_stem
+                    else insn["dest"]
+                )
+                old_index = (
+                    self.ssa_names[name_stem][-1][1]
+                    if name_stem in self.ssa_names
+                    and len(self.ssa_names[name_stem]) > 0
+                    else -1
+                )
                 new_ssa_name = name_stem + "." + str(old_index + 1)
                 self.ssa_names[name_stem].append((new_ssa_name, old_index + 1))
                 self.ssa_name_stem[new_ssa_name] = name_stem
                 insn["dest"] = new_ssa_name
                 # print(f"Renaming {name_stem} on {insn} to {new_ssa_name} ({path})")
 
-            # Propagate the name change to our phi-neighbors
-            for successor in self.successors[blk.get_name()]:
-                ssa_blk = self.ssa_blocks[successor.get_name()]
-                for var in ssa_blk.get_phi_nodes():
+        for successor in self.successors[blk.get_name()]:
+            ssa_blk = self.ssa_blocks[successor.get_name()]
+            for var in ssa_blk.get_phi_nodes():
+                if len(self.ssa_names[var[0]]) > 0:
                     ssa_blk.update_phi_arg(
                         var, blk.get_name(), self.ssa_names[var[0]][-1][0]
                     )
 
-            # Propagate the simple name change to our dominated neighbors
-            for other_blk in self.blocks:
-                if self.dom_info.immediately_dominates(blk, other_blk) and (
-                    len(path) == 0 or not self.dom_info.dominates(path[0], other_blk)
-                ):
-                    # print(f"Propagating {blk.get_name()} to {other_blk.get_name()}")
-                    self.rename_recursively(
-                        self.ssa_blocks[other_blk.get_name()], path + [blk.get_name()]
-                    )
+        # Propagate the simple name change to our dominated neighbors
+        for other_blk in self.blocks:
+            if self.dom_info.immediately_dominates(blk, other_blk):
+                # print(f"Propagating {blk.get_name()} to {other_blk.get_name()}")
+                self.rename_recursively(
+                    self.ssa_blocks[other_blk.get_name()], path + [blk.get_name()]
+                )
 
         self.ssa_names = name_stack
 
