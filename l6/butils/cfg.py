@@ -54,6 +54,13 @@ class Instruction:
         if "value" in insn:
             self.args += f" {insn['value']}"
         self.dest = insn["dest"] if "dest" in insn else None
+        self.type = insn["type"] if "type" in insn else None
+
+    def get_type(self) -> Any:
+        return self.type
+
+    def get_dest(self) -> str:
+        return self.dest
 
     def __eq__(self, other) -> bool:
         return isinstance(other, Instruction) and self.insn == other.insn
@@ -102,8 +109,11 @@ class Block:
     def __repr__(self) -> str:
         return self.name
 
-    def get_definitions(self) -> set[str]:
+    def get_definitions(self) -> set[(str, Any)]:
         return set(self.get_definitions_dict().keys())
+
+    def get_definitions_typed(self) -> set[(str, Any)]:
+        return set([(k, v.get_type()) for k, v in self.get_definitions_dict().items()])
 
     def get_definitions_dict(self) -> dict[str, Instruction]:
         defined = {}
