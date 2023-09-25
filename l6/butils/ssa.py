@@ -1,6 +1,7 @@
 from typing import Any
 from butils.cfg import Instruction, CFG, Block
 from butils.dominance import Dominance
+from copy import deepcopy
 
 # TODO: delete this
 import json
@@ -51,14 +52,24 @@ class SSABlock(Block):
 
     def update_phi_arg(self, var: str, label: str, ssa_name: str) -> None:
         if var in self.phi_nodes:
-            for insn in self.instrs:
-                if "op" in insn and insn["op"] == "phi" and var in insn["dest"]:
-                    if label in insn["labels"]:
-                        insn["args"][insn["labels"].index(label)] = ssa_name
-                    else:
-                        insn["args"].append(ssa_name)
-                        insn["labels"].append(label)
-                    break
+            insn = self.phi_nodes[var].insn
+            if label in insn["labels"]:
+                insn["args"][insn["labels"].index(label)] = ssa_name
+            else:
+                insn["args"].append(ssa_name)
+                insn["labels"].append(label)
+
+    def alloc_phi_node(self, var: str, type: Any, ssa_name: str = None) -> None:
+        if var not in self.phi_nodes:
+            self.phi_nodes[var] = Instruction(
+                {
+                    "args": [],
+                    "dest": ssa_name if ssa_name is not None else var,
+                    "labels": [],
+                    "op": "phi",
+                    "type": type,
+                }
+            )
 
     def insert_phi_node(
         self, var: str, type: Any, ssa_name: str, source_name: str, blk_name: str
@@ -108,7 +119,7 @@ class SSA:
             for vdef in blk_defs:
                 self.variables.add(vdef[0])
                 self.varToType[vdef[0]] = vdef[1]
-                if vdef not in self.has_def_inside:
+                if vdef[0] not in self.has_def_inside:
                     self.has_def_inside[vdef[0]] = set([blk.get_name()])
                 else:
                     self.has_def_inside[vdef[0]].add(blk.get_name())
@@ -151,8 +162,9 @@ class SSA:
                             )
                         for front in self.dom_frontier[blk]:
                             blk_to_edit = self.ssa_blocks[front.get_name()]
-                            blk_to_edit.insert_phi_node(
-                                var, self.varToType[var], None, var, blk
+                            blk_to_edit.alloc_phi_node(
+                                var,
+                                self.varToType[var],
                             )
                             # Propagate the changes to blocks downstream
                             if front.get_name() not in self.has_def_inside[var]:
@@ -173,7 +185,9 @@ class SSA:
         for _, ssa_blk in self.ssa_blocks.items():
             ssa_blk.update_with_phi_nodes()
 
-        self.rename_recursively(self.ssa_blocks[self.blocks[0].get_name()], ssa_names)
+        self.rename_recursively(
+            self.ssa_blocks[self.blocks[0].get_name()], deepcopy(ssa_names)
+        )
 
         self.ssa_func = CFG.from_blocks(self.cfg.get_func(), self.blocks).get_func()
 
@@ -185,8 +199,6 @@ class SSA:
             if "args" in insn and not ("op" in insn and insn["op"] == "phi"):
                 for i in range(len(insn["args"])):
                     arg_stem = self.ssa_name_stem[insn["args"][i]]
-                    if len(ssa_names[arg_stem]) == 0:
-                        continue
                     insn["args"][i] = ssa_names[arg_stem][-1][0]
 
             # SSA rename the dest
@@ -195,33 +207,27 @@ class SSA:
                 new_ssa_name = name_stem + "." + str(len(ssa_names[name_stem]))
                 ssa_names[name_stem].append((new_ssa_name, len(ssa_names[name_stem])))
                 self.ssa_name_stem[
-                    name_stem + "." + str(len(ssa_names[name_stem]) + 1)
+                    name_stem + "." + str(len(ssa_names[name_stem]))
                 ] = name_stem
                 insn["dest"] = new_ssa_name
                 if "op" in insn and insn["op"] == "phi" and self.verboseF is not None:
                     print(f"renamed isn {insn}", file=self.verboseF)
-
-        print(
-            f"Inside {blk.get_name()} ",
-            file=self.verboseF,
-        )
 
         for successor in self.successors[blk.get_name()]:
             ssa_blk = self.ssa_blocks[successor.get_name()]
             for var in ssa_blk.get_phi_nodes():
                 name_stem = self.ssa_name_stem[var]
                 if len(ssa_names[name_stem]) == 0:
-                    ssa_blk.update_phi_arg(
-                        name_stem,
-                        blk.get_name(),
-                        name_stem,
-                    )
-                else:
-                    ssa_blk.update_phi_arg(
-                        name_stem,
-                        blk.get_name(),
-                        ssa_names[name_stem][-1][0],
-                    )
+                    ssa_names[name_stem].append((name_stem + ".0", 0))
+                    self.ssa_name_stem[
+                        name_stem + "." + str(len(ssa_names[name_stem]))
+                    ] = name_stem
+
+                ssa_blk.update_phi_arg(
+                    var,
+                    blk.get_name(),
+                    ssa_names[name_stem][-1][0],
+                )
                 if self.verboseF is not None:
                     print(
                         f"Block {blk.get_name()} wants to output to {successor.get_name()}",
@@ -238,7 +244,7 @@ class SSA:
                 )
             self.rename_recursively(
                 self.ssa_blocks[other_blk.get_name()],
-                ssa_names,
+                deepcopy(ssa_names),
                 path + [blk.get_name()],
             )
 

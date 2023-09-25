@@ -251,7 +251,7 @@ class CFG:
                     if len(cblk) > 0:
                         self.blocks.append(Block(cname, cblk))
                         cblk = []
-                    cname = labelStack[0]["label"]
+                    cname = labelStack[-1]["label"]
                     cblk = labelStack
                     labelStack = []
 
