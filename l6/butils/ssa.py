@@ -30,7 +30,7 @@ class SSABlock(Block):
                 and self.instrs[i]["op"] == "phi"
             ):
                 if (
-                    # This is a bad way of checking a match
+                    # TODO: This is a bad way of checking a match
                     self.instrs[i]["dest"]
                     in insn.insn["dest"]
                 ):
@@ -41,6 +41,7 @@ class SSABlock(Block):
 
             if not placed:
                 self.instrs.insert(i, insn.insn)
+                start += 1
 
     def rename_phi_node(self, var: str, ssa_name: str) -> None:
         if var in self.phi_nodes:
@@ -155,9 +156,9 @@ class SSA:
             if var in self.has_def_inside:
                 for blk in self.has_def_inside[var]:
                     if blk in self.dom_frontier:
-                        if self.verboseF is not None:
+                        if self.verboseF is not None and len(self.dom_frontier[blk]) > 0:
                             print(
-                                f"{self.dom_frontier[blk]} is on the frontier of {blk} ({len(self.has_def_inside[var])})",
+                                f"{self.dom_frontier[blk]} are on the frontier of {blk} for variable {var}",
                                 file=self.verboseF,
                             )
                         for front in self.dom_frontier[blk]:
