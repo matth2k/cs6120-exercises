@@ -31,12 +31,13 @@ class Dominance:
         # We have dominators now. Now do dominance Frontiers
         self.domFrontier: dict[str, set] = {}
         successors = cfg.get_cfg()
-        for b in blocks:
-            self.domFrontier[b.get_name()] = set()
-            for dominator in self.dom[b.get_name()]:
-                for s in successors[b.get_name()]:
+        for m in blocks:
+            for dominator in self.dom[m.get_name()]:
+                if dominator.get_name() not in self.domFrontier:
+                    self.domFrontier[dominator.get_name()] = set()
+                for s in successors[m.get_name()]:
                     if not self.strictly_dominates(dominator, s):
-                        self.domFrontier[b.get_name()].add(s)
+                        self.domFrontier[dominator.get_name()].add(s)
 
         # Finally, do dominator tree
         self.idom: dict[str, set] = {}

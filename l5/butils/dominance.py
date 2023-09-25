@@ -32,7 +32,7 @@ class Dominance:
         self.domFrontier: dict[str, set] = {}
         successors = cfg.get_cfg()
         for m in blocks:
-            for dominator in self.dom[b.get_name()]:
+            for dominator in self.dom[m.get_name()]:
                 if dominator.get_name() not in self.domFrontier:
                     self.domFrontier[dominator.get_name()] = set()
                 for s in successors[m.get_name()]:
