@@ -20,7 +20,10 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     brilProgram = json.load(args.input)
-    ssa_funcs = [SSA(CFG(func)).get_func() for func in brilProgram["functions"]]
+    ssa_funcs = [
+        SSA(CFG(func), sys.stderr if args.verbose else None).get_func()
+        for func in brilProgram["functions"]
+    ]
     brilProgram["functions"] = ssa_funcs
 
     json.dump(brilProgram, args.output, indent=2, sort_keys=True)

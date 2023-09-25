@@ -109,6 +109,14 @@ class Block:
     def __repr__(self) -> str:
         return self.name
 
+    def get_uses(self) -> set[str]:
+        all_uses = set()
+        for insn in self.instrs:
+            if "args" in insn:
+                for arg in insn["args"]:
+                    all_uses.add(arg)
+        return all_uses
+
     def get_definitions(self) -> set[(str, Any)]:
         return set(self.get_definitions_dict().keys())
 
