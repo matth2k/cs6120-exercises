@@ -29,11 +29,7 @@ class SSABlock(Block):
                 and "op" in self.instrs[i]
                 and self.instrs[i]["op"] == "phi"
             ):
-                if (
-                    # TODO: This is a bad way of checking a match
-                    self.instrs[i]["dest"]
-                    in insn.insn["dest"]
-                ):
+                if self.instrs[i]["dest"] == insn.insn["dest"]:
                     self.instrs[i] = insn.insn
                     placed = True
                     break
@@ -43,20 +39,12 @@ class SSABlock(Block):
                 self.instrs.insert(i, insn.insn)
                 start += 1
 
-    def rename_phi_node(self, var: str, ssa_name: str) -> None:
-        if var in self.phi_nodes:
-            for insn in self.instrs:
-                if "op" in insn and insn["op"] == "phi" and var in insn["dest"]:
-                    insn["dest"] = ssa_name
-                    self.phi_nodes[var].insn = insn.copy()
-                    break
-
-    def update_phi_arg(self, var: str, label: str, ssa_name: str) -> None:
+    def update_phi_arg(self, var: str, label: str, ssa_name: str, insert=True) -> None:
         if var in self.phi_nodes:
             insn = self.phi_nodes[var].insn
             if label in insn["labels"]:
                 insn["args"][insn["labels"].index(label)] = ssa_name
-            else:
+            elif insert:
                 insn["args"].append(ssa_name)
                 insn["labels"].append(label)
 
@@ -71,34 +59,10 @@ class SSABlock(Block):
                     "type": type,
                 }
             )
-
-    def insert_phi_node(
-        self, var: str, type: Any, ssa_name: str, source_name: str, blk_name: str
-    ) -> None:
-        if var not in self.phi_nodes:
-            self.phi_nodes[var] = Instruction(
-                {
-                    "args": [source_name],
-                    "dest": ssa_name if ssa_name is not None else var,
-                    "labels": [blk_name],
-                    "op": "phi",
-                    "type": type,
-                }
-            )
-        elif blk_name not in self.phi_nodes[var].insn["labels"]:
-            insn = self.phi_nodes[var].insn
-            insn["args"].append(source_name)
-            insn["labels"].append(blk_name)
-            if ssa_name is not None:
-                insn["dest"] = ssa_name
-            self.phi_nodes[var].insn = insn
         else:
-            insn = self.phi_nodes[var].insn
-            index = insn["labels"].index(blk_name)
-            insn["args"][index] = source_name
-            if ssa_name is not None:
-                insn["dest"] = ssa_name
-            self.phi_nodes[var].insn = insn
+            # TODO: Should we insert labels here?
+            self.phi_nodes[var].insn["type"] = type
+            self.phi_nodes[var].insn["dest"] = ssa_name if ssa_name is not None else var
 
 
 class SSA:
@@ -116,14 +80,14 @@ class SSA:
 
         # Collect all the variables in a set and track where vars have definitions
         for blk in self.blocks:
-            blk_defs = blk.get_definitions_typed()
+            blk_defs, typeMap = blk.get_definitions_typed()
             for vdef in blk_defs:
-                self.variables.add(vdef[0])
-                self.varToType[vdef[0]] = vdef[1]
-                if vdef[0] not in self.has_def_inside:
-                    self.has_def_inside[vdef[0]] = set([blk.get_name()])
+                self.variables.add(vdef)
+                self.varToType[vdef] = typeMap[vdef]
+                if vdef not in self.has_def_inside:
+                    self.has_def_inside[vdef] = set([blk.get_name()])
                 else:
-                    self.has_def_inside[vdef[0]].add(blk.get_name())
+                    self.has_def_inside[vdef].add(blk.get_name())
 
         # Add args to set of variables
         func_args = []
@@ -147,7 +111,7 @@ class SSA:
         for blk in self.blocks:
             self.ssa_blocks[blk.get_name()] = SSABlock(blk)
 
-        # Make sure entry block has a phi node
+        # Make sure entry block has a labe for executing phi nodes
         self.ssa_blocks[self.blocks[0].get_name()].insert_front(
             Instruction({"label": self.blocks[0].get_name()})
         )
@@ -156,9 +120,12 @@ class SSA:
             if var in self.has_def_inside:
                 for blk in self.has_def_inside[var]:
                     if blk in self.dom_frontier:
-                        if self.verboseF is not None and len(self.dom_frontier[blk]) > 0:
+                        if (
+                            self.verboseF is not None
+                            and len(self.dom_frontier[blk]) > 0
+                        ):
                             print(
-                                f"{self.dom_frontier[blk]} are on the frontier of {blk} for variable {var}",
+                                f"ssa.py: Adding phi node for {var} from {blk} to {self.dom_frontier[blk]}",
                                 file=self.verboseF,
                             )
                         for front in self.dom_frontier[blk]:
@@ -166,6 +133,11 @@ class SSA:
                             blk_to_edit.alloc_phi_node(
                                 var,
                                 self.varToType[var],
+                            )
+                            blk_to_edit.update_phi_arg(
+                                var,
+                                blk,
+                                var,
                             )
                             # Propagate the changes to blocks downstream
                             if front.get_name() not in self.has_def_inside[var]:
@@ -176,12 +148,11 @@ class SSA:
         self.ssa_name_stem = {}
         for var in self.variables:
             ssa_names[var] = []
-            self.ssa_name_stem[var + ".0"] = var
             self.ssa_name_stem[var] = var
 
         if "args" in cfg.func:
             for arg in cfg.func["args"]:
-                ssa_names[arg["name"]].append((arg["name"], 0))
+                ssa_names[arg["name"]].append((arg["name"], -1))
 
         for _, ssa_blk in self.ssa_blocks.items():
             ssa_blk.update_with_phi_nodes()
@@ -205,44 +176,49 @@ class SSA:
             # SSA rename the dest
             if "dest" in insn:
                 name_stem = self.ssa_name_stem[insn["dest"]]
-                new_ssa_name = name_stem + "." + str(len(ssa_names[name_stem]))
-                ssa_names[name_stem].append((new_ssa_name, len(ssa_names[name_stem])))
-                self.ssa_name_stem[
-                    name_stem + "." + str(len(ssa_names[name_stem]))
-                ] = name_stem
+                new_index = (
+                    ssa_names[name_stem][-1][1] + 1
+                    if len(ssa_names[name_stem]) > 0
+                    else 0
+                )
+                new_ssa_name = name_stem + "." + str(new_index)
+                ssa_names[name_stem].append((new_ssa_name, new_index))
+                self.ssa_name_stem[name_stem + "." + str(new_index)] = name_stem
                 insn["dest"] = new_ssa_name
-                if "op" in insn and insn["op"] == "phi" and self.verboseF is not None:
-                    print(f"renamed isn {insn}", file=self.verboseF)
+                if self.verboseF is not None and "op" in insn and insn["op"] == "phi":
+                    print(
+                        f"ssa.py: var {name_stem} in phi node at blk {blk.get_name()} was renamed to {new_ssa_name}",
+                        file=self.verboseF,
+                    )
 
         for successor in self.successors[blk.get_name()]:
             ssa_blk = self.ssa_blocks[successor.get_name()]
             for var in ssa_blk.get_phi_nodes():
                 name_stem = self.ssa_name_stem[var]
                 if len(ssa_names[name_stem]) == 0:
-                    ssa_names[name_stem].append((name_stem + ".0", 0))
-                    self.ssa_name_stem[
-                        name_stem + "." + str(len(ssa_names[name_stem]))
-                    ] = name_stem
-
-                ssa_blk.update_phi_arg(
-                    var,
-                    blk.get_name(),
-                    ssa_names[name_stem][-1][0],
-                )
+                    ssa_blk.update_phi_arg(var, blk.get_name(), name_stem + ".nil")
+                else:
+                    ssa_blk.update_phi_arg(
+                        var, blk.get_name(), ssa_names[name_stem][-1][0]
+                    )
                 if self.verboseF is not None:
                     print(
-                        f"Block {blk.get_name()} wants to output to {successor.get_name()}",
+                        f"ssa.py: Block {blk.get_name()} wants to pass {var} to {successor.get_name()}",
                         file=self.verboseF,
                     )
 
         # Propagate the simple name change to our dominated neighbors
         idoms = list(self.dom_info.idom[blk.get_name()])
+        if self.verboseF is not None and len(idoms) > 0:
+            varNames = []
+            for ssa_name in ssa_names:
+                if len(ssa_names[ssa_name]) > 0:
+                    varNames.append(ssa_names[ssa_name][-1][0])
+            print(
+                f"ssa.py: Block {blk.get_name()} dominates {idoms} with {varNames}",
+                file=self.verboseF,
+            )
         for other_blk in idoms:
-            if self.verboseF is not None:
-                print(
-                    f"Block {blk.get_name()} wants to rename {other_blk.get_name()} with {ssa_names}",
-                    file=self.verboseF,
-                )
             self.rename_recursively(
                 self.ssa_blocks[other_blk.get_name()],
                 deepcopy(ssa_names),

@@ -117,11 +117,15 @@ class Block:
                     all_uses.add(arg)
         return all_uses
 
-    def get_definitions(self) -> set[(str, Any)]:
+    def get_definitions(self) -> set[str]:
         return set(self.get_definitions_dict().keys())
 
-    def get_definitions_typed(self) -> set[(str, Any)]:
-        return set([(k, v.get_type()) for k, v in self.get_definitions_dict().items()])
+    def get_definitions_typed(self) -> tuple[set[str], dict[str, Any]]:
+        defined = {}
+        for insn in self.instrs:
+            if "dest" in insn:
+                defined[insn["dest"]] = insn["type"]
+        return set(defined.keys()), defined
 
     def get_definitions_dict(self) -> dict[str, Instruction]:
         defined = {}
