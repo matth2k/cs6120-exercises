@@ -67,11 +67,12 @@ class SSABlock(Block):
 
 class SSA:
     def __init__(self, cfg: CFG, verboseF=None) -> None:
-        self.cfg = cfg
+        self.cfg = SSA.reanchor_cfg(cfg)
+        self.predecessors = self.cfg.get_predecessors()
+        self.blocks = self.cfg.get_blocks()
         self.successors = self.cfg.get_successors_by_name()
-        self.dom_info = Dominance(cfg)
+        self.dom_info = Dominance(self.cfg)
         self.dom_frontier = self.dom_info.get_dom_frontier()
-        self.blocks = cfg.get_blocks()
         self.variables = set()
         self.varToType = {}
         self.has_def_inside = {}
@@ -90,11 +91,9 @@ class SSA:
                     self.has_def_inside[vdef].add(blk.get_name())
 
         # Add args to set of variables
-        func_args = []
         if "args" in cfg.func:
             for arg in cfg.func["args"]:
                 var = arg["name"]
-                func_args.append(var)
                 self.variables.add(var)
                 self.varToType[var] = arg["type"]
                 if var in self.has_def_inside:
@@ -145,6 +144,7 @@ class SSA:
         for var in self.variables:
             ssa_names[var] = []
             self.ssa_name_stem[var] = var
+            self.ssa_name_stem[var + ".0"] = var
 
         if "args" in cfg.func:
             for arg in cfg.func["args"]:
@@ -204,12 +204,13 @@ class SSA:
                 )
                 if self.verboseF is not None:
                     print(
-                        f"ssa.py: Block {blk.get_name()} wants to pass {var} to {successor_name}",
+                        f"ssa.py: Block {blk.get_name()} wants to pass {var} to {successor_name} as {ssa_name}",
                         file=self.verboseF,
                     )
 
         # Propagate the simple name change to our dominated neighbors
         idoms = list(self.dom_info.idom[blk.get_name()])
+
         if self.verboseF is not None and len(idoms) > 0:
             varNames = []
             for ssa_name in ssa_names:
@@ -228,3 +229,35 @@ class SSA:
 
     def get_func(self) -> Any:
         return self.ssa_func.copy()
+
+    def reanchor_cfg(cfg: CFG) -> CFG:
+        tcfg = cfg
+        predecessors = tcfg.get_predecessors()
+        blocks = tcfg.get_blocks()
+        while len(predecessors[blocks[0].get_name()]) > 0:
+            frontblock = blocks[0]
+            instrs = [
+                {"label": frontblock.get_name() + ".root"},
+            ]
+            if "args" in cfg.func:
+                for arg in cfg.func["args"]:
+                    instrs.append(
+                        {
+                            "op": "id",
+                            "args": [arg["name"]],
+                            "dest": arg["name"] + ".0",
+                            "type": arg["type"],
+                        }
+                    )
+            instrs.append({"op": "jmp", "args": [], "labels": [frontblock.get_name()]})
+            redirect = Block(frontblock.get_name() + ".root", instrs)
+            blks = tcfg.get_blocks()
+            for blk in blks:
+                for insn in blk.instrs:
+                    if "args" in insn:
+                        for i in range(len(insn["args"])):
+                            insn["args"][i] = insn["args"][i] + ".0"
+            tcfg = CFG.from_blocks(tcfg.get_func(), [redirect] + tcfg.get_blocks())
+            predecessors = tcfg.get_predecessors()
+            blocks = tcfg.get_blocks()
+        return tcfg

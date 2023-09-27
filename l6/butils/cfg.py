@@ -85,7 +85,7 @@ class Block:
 
     def insert_front(self, insn: Instruction) -> None:
         start = 0
-        while "label" in self.instrs[start]:
+        while start < len(self.instrs) and "label" in self.instrs[start]:
             start += 1
         self.instrs.insert(start, insn.insn)
 
@@ -246,7 +246,7 @@ class CFG:
         anon_blk_count = 0
         cblk = []
         labelStack = []
-        cname = "entry_blk"
+        cname = "entry.blk"
         for insn in self.func["instrs"]:
             if "op" in insn:
                 if len(labelStack) > 0:
@@ -262,7 +262,7 @@ class CFG:
                     self.blocks.append(Block(cname, cblk))
                     cblk = []
                     anon_blk_count += 1
-                    cname = f"fallthru_blk_{anon_blk_count}"
+                    cname = f"fallthru.blk.{anon_blk_count}"
             elif "label" in insn:
                 labelStack.append(insn)
             else:
@@ -287,6 +287,20 @@ class CFG:
 
     def get_blocks(self) -> list[Block]:
         return self.blocks.copy()
+
+    def insert_block(self, blk: Block, pos: int = None) -> None:
+        if blk.get_name() in self.blockDict:
+            raise Exception(f"Block {blk.get_name()} already exists")
+        if pos is None:
+            self.blocks.append(blk)
+        else:
+            self.blocks.insert(pos, blk)
+        self.blockDict[blk.get_name()] = blk
+        for insn in blk.get_instrs():
+            if "label" in insn:
+                if insn["label"] != blk.get_name() and insn["label"] in self.blockDict:
+                    raise Exception(f"Block {insn['label']} already exists")
+                self.blockDict[insn["label"]] = blk
 
     def get_block(self, name: str) -> Block:
         if name in self.blockDict:

@@ -1,0 +1,148 @@
+ssa.py: Adding phi node for curr2 from next to [repeat]
+ssa.py: Adding phi node for curr2 from repeat to [repeat]
+ssa.py: Adding phi node for stop from repeat to [repeat]
+ssa.py: Adding phi node for curr from next to [repeat]
+ssa.py: Adding phi node for curr from repeat to [repeat]
+ssa.py: Adding phi node for i from next to [repeat]
+ssa.py: Adding phi node for i from repeat to [repeat]
+ssa.py: Adding phi node for tmp from next to [repeat]
+ssa.py: Adding phi node for tmp from repeat to [repeat]
+ssa.py: Block entry_blk wants to pass curr2 to repeat
+ssa.py: Block entry_blk wants to pass stop to repeat
+ssa.py: Block entry_blk wants to pass curr to repeat
+ssa.py: Block entry_blk wants to pass i to repeat
+ssa.py: Block entry_blk wants to pass tmp to repeat
+ssa.py: Block entry_blk dominates [repeat] with ['new.0', 'curr2.0', 'l', 'out.0', 'ns', 'n', 'curr.0', 'one.0', 'i.0']
+ssa.py: var curr2 in phi node at blk repeat was redefined to curr2.1
+ssa.py: var stop in phi node at blk repeat was redefined to stop.0
+ssa.py: var curr in phi node at blk repeat was redefined to curr.1
+ssa.py: var i in phi node at blk repeat was redefined to i.1
+ssa.py: var tmp in phi node at blk repeat was redefined to tmp.0
+ssa.py: Block repeat dominates [exit, next] with ['new.0', 'curr2.1', 'l', 'out.0', 'ns', 'n', 'stop.1', 'curr.1', 'one.0', 'i.1', 'tmp.0']
+ssa.py: Block next wants to pass curr2 to repeat
+ssa.py: Block next wants to pass stop to repeat
+ssa.py: Block next wants to pass curr to repeat
+ssa.py: Block next wants to pass i to repeat
+ssa.py: Block next wants to pass tmp to repeat
+ssa.py: Adding phi node for square from continue to [continue]
+ssa.py: Adding phi node for works from continue to [continue]
+ssa.py: Adding phi node for continue from continue to [continue]
+ssa.py: Adding phi node for guess from inc to [continue]
+ssa.py: Adding phi node for guess from continue to [continue]
+ssa.py: Block entry_blk wants to pass square to continue
+ssa.py: Block entry_blk wants to pass works to continue
+ssa.py: Block entry_blk wants to pass continue to continue
+ssa.py: Block entry_blk wants to pass guess to continue
+ssa.py: Block entry_blk dominates [continue] with ['n', 'inc.0', 'guess.0']
+ssa.py: var square in phi node at blk continue was redefined to square.0
+ssa.py: var works in phi node at blk continue was redefined to works.0
+ssa.py: var continue in phi node at blk continue was redefined to continue.0
+ssa.py: var guess in phi node at blk continue was redefined to guess.1
+ssa.py: Block continue dominates [inc, yay] with ['n', 'square.1', 'works.1', 'inc.0', 'continue.1', 'guess.1']
+ssa.py: Block inc wants to pass square to continue
+ssa.py: Block inc wants to pass works to continue
+ssa.py: Block inc wants to pass continue to continue
+ssa.py: Block inc wants to pass guess to continue
+ssa.py: Block inc dominates [giveup] with ['n', 'square.1', 'works.1', 'inc.0', 'continue.1', 'guess.2']
+ssa.py: Adding phi node for n from repeat to [repeat, continue]
+ssa.py: Adding phi node for n from continue to [continue]
+ssa.py: Adding phi node for count from divided to [continue]
+ssa.py: Adding phi node for count from continue to [continue]
+ssa.py: Adding phi node for ans from divided to [continue]
+ssa.py: Adding phi node for ans from continue to [continue]
+ssa.py: Adding phi node for exit from continue to [continue]
+ssa.py: Adding phi node for prime from next to [continue]
+ssa.py: Adding phi node for prime from continue to [continue]
+ssa.py: Adding phi node for divides from repeat to [repeat, continue]
+ssa.py: Adding phi node for divides from continue to [continue]
+ssa.py: Adding phi node for tmp from divided to [continue]
+ssa.py: Adding phi node for tmp from continue to [continue]
+ssa.py: Block entry_blk wants to pass n to continue
+ssa.py: Block entry_blk wants to pass count to continue
+ssa.py: Block entry_blk wants to pass ans to continue
+ssa.py: Block entry_blk wants to pass exit to continue
+ssa.py: Block entry_blk wants to pass prime to continue
+ssa.py: Block entry_blk wants to pass divides to continue
+ssa.py: Block entry_blk wants to pass tmp to continue
+ssa.py: Block entry_blk dominates [continue] with ['n', 'num_factors', 'count.0', 'zero.0', 'one.0', 'ans.0']
+ssa.py: var n in phi node at blk continue was redefined to n.0
+ssa.py: var count in phi node at blk continue was redefined to count.1
+ssa.py: var ans in phi node at blk continue was redefined to ans.1
+ssa.py: var exit in phi node at blk continue was redefined to exit.0
+ssa.py: var prime in phi node at blk continue was redefined to prime.0
+ssa.py: var divides in phi node at blk continue was redefined to divides.0
+ssa.py: var tmp in phi node at blk continue was redefined to tmp.0
+ssa.py: Block continue dominates [next, exit] with ['n.0', 'num_factors', 'count.1', 'zero.0', 'one.0', 'ans.1', 'exit.1', 'prime.0', 'divides.0', 'tmp.0']
+ssa.py: Block next wants to pass n to repeat
+ssa.py: Block next wants to pass divides to repeat
+ssa.py: Block next dominates [repeat] with ['n.0', 'num_factors', 'count.1', 'zero.0', 'one.0', 'ans.1', 'exit.1', 'prime.1', 'divides.0', 'tmp.0']
+ssa.py: var n in phi node at blk repeat was redefined to n.1
+ssa.py: var divides in phi node at blk repeat was redefined to divides.1
+ssa.py: Block repeat dominates [divided] with ['n.2', 'num_factors', 'count.1', 'zero.0', 'one.0', 'ans.1', 'exit.1', 'prime.1', 'divides.2', 'tmp.0']
+ssa.py: Block divided wants to pass n to continue
+ssa.py: Block divided wants to pass count to continue
+ssa.py: Block divided wants to pass ans to continue
+ssa.py: Block divided wants to pass exit to continue
+ssa.py: Block divided wants to pass prime to continue
+ssa.py: Block divided wants to pass divides to continue
+ssa.py: Block divided wants to pass tmp to continue
+ssa.py: Adding phi node for res from post_multiply to [exit]
+ssa.py: Block entry_blk dominates [not_zero, exp_zero] with ['m', 'two.0', 'zero.0', 'one.0', 'eq_zero.0', 'a.0', 'k']
+ssa.py: Block not_zero dominates [exp_one, not_one] with ['eq_one.0', 'm', 'two.0', 'zero.0', 'one.0', 'eq_zero.0', 'a.0', 'k']
+ssa.py: Block not_one wants to pass res to exit
+ssa.py: Block not_one dominates [post_multiply, exit] with ['eq_one.0', 'sqrt.0', 'm', 'two.0', 'zero.0', 'one.0', 'res.1', 'half_exp.0', 'post_mul.0', 'eq_zero.0', 'a.0', 'k', 'rem_two.0']
+ssa.py: Block post_multiply wants to pass res to exit
+ssa.py: var res in phi node at blk exit was redefined to res.2
+ssa.py: Adding phi node for is_one from next1 to [check_power]
+ssa.py: Adding phi node for is_one from check_power to [check_power]
+ssa.py: Adding phi node for exp from next1 to [check_power]
+ssa.py: Adding phi node for exp from check_power to [check_power]
+ssa.py: Adding phi node for stop from check_power to [check_power]
+ssa.py: Adding phi node for ptr from next2 to [check_power]
+ssa.py: Adding phi node for ptr from check_power to [check_power]
+ssa.py: Adding phi node for factor from check_power to [check_power]
+ssa.py: Adding phi node for count from next2 to [check_power]
+ssa.py: Adding phi node for count from check_power to [check_power]
+ssa.py: Adding phi node for power from next1 to [check_power]
+ssa.py: Adding phi node for power from check_power to [check_power]
+ssa.py: Block entry_blk wants to pass is_one to check_power
+ssa.py: Block entry_blk wants to pass exp to check_power
+ssa.py: Block entry_blk wants to pass stop to check_power
+ssa.py: Block entry_blk wants to pass ptr to check_power
+ssa.py: Block entry_blk wants to pass factor to check_power
+ssa.py: Block entry_blk wants to pass count to check_power
+ssa.py: Block entry_blk wants to pass power to check_power
+ssa.py: Block entry_blk dominates [check_power] with ['p', 'ptr.0', 'count.0', 'zero.0', 'one.0', 'factors', 'guess', 'phi_p']
+ssa.py: var is_one in phi node at blk check_power was redefined to is_one.0
+ssa.py: var exp in phi node at blk check_power was redefined to exp.0
+ssa.py: var stop in phi node at blk check_power was redefined to stop.0
+ssa.py: var ptr in phi node at blk check_power was redefined to ptr.1
+ssa.py: var factor in phi node at blk check_power was redefined to factor.0
+ssa.py: var count in phi node at blk check_power was redefined to count.1
+ssa.py: var power in phi node at blk check_power was redefined to power.0
+ssa.py: Block check_power dominates [next1, ret_true] with ['is_one.0', 'exp.0', 'p', 'stop.1', 'ptr.1', 'factor.1', 'count.1', 'zero.0', 'one.0', 'power.0', 'factors', 'guess', 'phi_p']
+ssa.py: Block next1 dominates [next2, ret_false] with ['is_one.1', 'exp.1', 'p', 'stop.1', 'ptr.1', 'factor.1', 'count.1', 'zero.0', 'one.0', 'power.1', 'factors', 'guess', 'phi_p']
+ssa.py: Block next2 wants to pass is_one to check_power
+ssa.py: Block next2 wants to pass exp to check_power
+ssa.py: Block next2 wants to pass stop to check_power
+ssa.py: Block next2 wants to pass ptr to check_power
+ssa.py: Block next2 wants to pass factor to check_power
+ssa.py: Block next2 wants to pass count to check_power
+ssa.py: Block next2 wants to pass power to check_power
+ssa.py: Adding phi node for too_big from eval to [eval]
+ssa.py: Adding phi node for works from keep_trying to [eval]
+ssa.py: Adding phi node for works from eval to [eval]
+ssa.py: Adding phi node for guess from inc to [eval]
+ssa.py: Adding phi node for guess from eval to [eval]
+ssa.py: Block entry_blk wants to pass too_big to eval
+ssa.py: Block entry_blk wants to pass works to eval
+ssa.py: Block entry_blk wants to pass guess to eval
+ssa.py: Block entry_blk dominates [eval] with ['p', 'start', 'one.0', 'fallback.0', 'factors', 'guess.0', 'phi_p']
+ssa.py: var too_big in phi node at blk eval was redefined to too_big.0
+ssa.py: var works in phi node at blk eval was redefined to works.0
+ssa.py: var guess in phi node at blk eval was redefined to guess.1
+ssa.py: Block eval dominates [keep_trying, done_guess] with ['too_big.1', 'p', 'start', 'works.0', 'one.0', 'fallback.0', 'factors', 'guess.1', 'phi_p']
+ssa.py: Block keep_trying dominates [inc, ret] with ['too_big.1', 'p', 'start', 'works.1', 'one.0', 'fallback.0', 'factors', 'guess.1', 'phi_p']
+ssa.py: Block inc wants to pass too_big to eval
+ssa.py: Block inc wants to pass works to eval
+ssa.py: Block inc wants to pass guess to eval
