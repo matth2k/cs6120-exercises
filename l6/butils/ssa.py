@@ -112,9 +112,10 @@ class SSA:
             self.ssa_blocks[blk.get_name()] = SSABlock(blk)
 
         # Make sure entry block has a labe for executing phi nodes
-        self.ssa_blocks[self.blocks[0].get_name()].insert_front(
-            Instruction({"label": self.blocks[0].get_name()})
-        )
+        if "label" not in self.blocks[0].instrs[0]:
+            self.ssa_blocks[self.blocks[0].get_name()].insert_front(
+                Instruction({"label": self.blocks[0].get_name()})
+            )
 
         for var in self.variables:
             if var in self.has_def_inside:
