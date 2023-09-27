@@ -50,7 +50,11 @@ class Dominance:
                 # If k strictly dominates j, then it must also dom b, if b were the idom
                 isIdom = True
                 for k in blocks:
-                    if self.strictly_dominates(k, j) and not self.dominates(k, b):
+                    if (
+                        k != b
+                        and self.strictly_dominates(k, j)
+                        and self.strictly_dominates(k, b)
+                    ):
                         isIdom = False
                         break
 
