@@ -89,6 +89,9 @@ class Block:
             start += 1
         self.instrs.insert(start, insn.insn)
 
+    def insert_back(self, insn: Instruction) -> None:
+        self.instrs.append(insn.insn)
+
     def get_instrs(self) -> list[Any]:
         return self.instrs.copy()
 

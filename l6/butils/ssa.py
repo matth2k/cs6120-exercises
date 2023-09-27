@@ -13,6 +13,12 @@ class SSABlock(Block):
         # Store as k,v (varName, ssaPhiNodeInsn)
         self.phi_nodes = {}
 
+    def insert_explicit_jmp(self, successors) -> None:
+        if self.get_terminator() is None and len(successors) == 1:
+            self.insert_back(
+                Instruction({"op": "jmp", "args": [], "labels": successors})
+            )
+
     def get_phi_nodes(self) -> list[tuple[str, Any]]:
         return list(self.phi_nodes.keys())
 
@@ -156,6 +162,9 @@ class SSA:
         self.rename_recursively(
             self.ssa_blocks[self.blocks[0].get_name()], deepcopy(ssa_names)
         )
+
+        for _, ssa_blk in self.ssa_blocks.items():
+            ssa_blk.insert_explicit_jmp(self.successors[ssa_blk.get_name()])
 
         self.ssa_func = CFG.from_blocks(self.cfg.get_func(), self.blocks).get_func()
 
