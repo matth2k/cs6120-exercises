@@ -134,11 +134,6 @@ class SSA:
                                 var,
                                 self.varToType[var],
                             )
-                            blk_to_edit.update_phi_arg(
-                                var,
-                                blk,
-                                var,
-                            )
                             # Propagate the changes to blocks downstream
                             if front.get_name() not in self.has_def_inside[var]:
                                 self.has_def_inside[var].append(front.get_name())
@@ -208,7 +203,7 @@ class SSA:
                 )
                 if self.verboseF is not None:
                     print(
-                        f"ssa.py: Block {blk.get_name()} wants to pass {var} to {ssa_blk.get_name()}",
+                        f"ssa.py: Block {blk.get_name()} wants to pass {var} to {successor_name}",
                         file=self.verboseF,
                     )
 

@@ -93,12 +93,10 @@ class Block:
         return self.instrs.copy()
 
     def get_terminator(self) -> Any:
-        ind = len(self.instrs) - 1
-        while "label" in self.instrs[ind] and ind > 0:
-            ind -= 1
-        if "label" in self.instrs[ind]:
-            return None
-        return self.instrs[ind].copy()
+        for insn in self.instrs:
+            if "op" in insn and insn["op"] in TERM_OPS:
+                return insn.copy()
+        return None
 
     def copy(self) -> Block:
         return Block(self.name, self.instrs.copy())
@@ -302,19 +300,31 @@ class CFG:
         raise Exception(f"Block {name} not found")
 
     def get_cfg(self) -> dict[str, list[Block]]:
-        nameToSuccessors = {}
-        for blk in self.blocks:
-            nameToSuccessors[blk.get_name()] = []
-        for s, d in self.get_cfg_edges():
-            nameToSuccessors[self.get_block(s).get_name()].append(self.get_block(d))
-        return nameToSuccessors
+        nameToSuccessors = self.get_successors_by_name()
+        blkDict = {}
+        for k, v in nameToSuccessors.items():
+            l = []
+            for d in v:
+                l.append(self.get_block(d))
+            blkDict[k] = l
+        return blkDict
 
     def get_successors_by_name(self) -> dict[str, list[str]]:
         nameToSuccessors = {}
+        hasIndeg = set()
+        nodes = set()
         for blk in self.blocks:
             nameToSuccessors[blk.get_name()] = []
         for s, d in self.get_cfg_edges():
             nameToSuccessors[self.get_block(s).get_name()].append(d)
+            hasIndeg.add(self.get_block(d).get_name())
+            nodes.add(self.get_block(s).get_name())
+            nodes.add(self.get_block(d).get_name())
+        hasIndeg.add(self.blocks[0].get_name())
+        # Kill unreachable blocks when they are predecessors
+        noIndeg = nodes.difference(hasIndeg)
+        for e in noIndeg:
+            nameToSuccessors[e] = []
         return nameToSuccessors
 
     def get_sink(self) -> Block:
@@ -328,12 +338,23 @@ class CFG:
 
         return sink
 
-    def get_predecessors(self) -> dict[str, list[Block]]:
+    def get_predecessors(self) -> dict[str, set[Block]]:
         predDict = {}
+        hasIndeg = set()
+        nodes = set()
         for blk in self.blocks:
-            predDict[blk.get_name()] = []
+            predDict[blk.get_name()] = set()
         for p, k in self.get_cfg_edges():
-            predDict[self.get_block(k).get_name()].append(self.get_block(p))
+            predDict[self.get_block(k).get_name()].add(self.get_block(p))
+            hasIndeg.add(self.get_block(k).get_name())
+            nodes.add(self.get_block(k).get_name())
+            nodes.add(self.get_block(p).get_name())
+        hasIndeg.add(self.blocks[0].get_name())
+        # Kill unreachable blocks when they are predecessors
+        noIndeg = nodes.difference(hasIndeg)
+        for e in noIndeg:
+            for k in predDict:
+                predDict[k].discard(e)
         return predDict
 
     def get_cfg_edges(self) -> Generator[tuple[str, str], None, None]:
@@ -351,8 +372,6 @@ class CFG:
                 lastBlock = None
             elif term["op"] == "ret":
                 lastBlock = None
-            else:
-                lastBlock = blk.get_name()
 
     def copy(self) -> CFG:
         return CFG(self.func.copy())
