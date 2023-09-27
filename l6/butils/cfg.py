@@ -309,6 +309,14 @@ class CFG:
             nameToSuccessors[self.get_block(s).get_name()].append(self.get_block(d))
         return nameToSuccessors
 
+    def get_successors_by_name(self) -> dict[str, list[str]]:
+        nameToSuccessors = {}
+        for blk in self.blocks:
+            nameToSuccessors[blk.get_name()] = []
+        for s, d in self.get_cfg_edges():
+            nameToSuccessors[self.get_block(s).get_name()].append(d)
+        return nameToSuccessors
+
     def get_sink(self) -> Block:
         sink = None
         mycfg = self.get_cfg()

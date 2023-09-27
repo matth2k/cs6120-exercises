@@ -68,7 +68,7 @@ class SSABlock(Block):
 class SSA:
     def __init__(self, cfg: CFG, verboseF=None) -> None:
         self.cfg = cfg
-        self.successors = self.cfg.get_cfg()
+        self.successors = self.cfg.get_successors_by_name()
         self.dom_info = Dominance(cfg)
         self.dom_frontier = self.dom_info.get_dom_frontier()
         self.blocks = cfg.get_blocks()
@@ -187,23 +187,28 @@ class SSA:
                 insn["dest"] = new_ssa_name
                 if self.verboseF is not None and "op" in insn and insn["op"] == "phi":
                     print(
-                        f"ssa.py: var {name_stem} in phi node at blk {blk.get_name()} was renamed to {new_ssa_name}",
+                        f"ssa.py: var {name_stem} in phi node at blk {blk.get_name()} was redefined to {new_ssa_name}",
                         file=self.verboseF,
                     )
 
-        for successor in self.successors[blk.get_name()]:
-            ssa_blk = self.ssa_blocks[successor.get_name()]
+        for successor_name in self.successors[blk.get_name()]:
+            canon_name = self.cfg.get_block(successor_name).get_name()
+            ssa_blk = self.ssa_blocks[canon_name]
             for var in ssa_blk.get_phi_nodes():
                 name_stem = self.ssa_name_stem[var]
-                if len(ssa_names[name_stem]) == 0:
-                    ssa_blk.update_phi_arg(var, blk.get_name(), name_stem + ".nil")
-                else:
-                    ssa_blk.update_phi_arg(
-                        var, blk.get_name(), ssa_names[name_stem][-1][0]
-                    )
+                ssa_name = (
+                    ssa_names[name_stem][-1][0]
+                    if len(ssa_names[name_stem]) > 0
+                    else name_stem + ".nil"
+                )
+                ssa_blk.update_phi_arg(
+                    var,
+                    successor_name if successor_name != canon_name else blk.get_name(),
+                    ssa_name,
+                )
                 if self.verboseF is not None:
                     print(
-                        f"ssa.py: Block {blk.get_name()} wants to pass {var} to {successor.get_name()}",
+                        f"ssa.py: Block {blk.get_name()} wants to pass {var} to {ssa_blk.get_name()}",
                         file=self.verboseF,
                     )
 
