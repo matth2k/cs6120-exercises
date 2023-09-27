@@ -10,20 +10,20 @@ class Dominance:
         blocks = cfg.get_blocks()
         predecessors = cfg.get_predecessors()
         self.dom: dict[str, set] = {}
-        self.dom[blocks[0].get_name()] = {blocks[0]}
+        self.dom[blocks[0].get_name()] = {blocks[0].get_name()}
         worklist = blocks.copy()
         worklist.remove(blocks[0])
         for b in worklist:
-            self.dom[b.get_name()] = set(blocks)
+            self.dom[b.get_name()] = set([b.get_name() for b in blocks])
 
         changing = True
         while changing:
             changing = False
             for b in worklist:
-                precedingDom = set(blocks)
+                precedingDom = set([b.get_name() for b in blocks])
                 for p in predecessors[b.get_name()]:
                     precedingDom = precedingDom.intersection(self.dom[p.get_name()])
-                updatedDom = precedingDom.union(set([b]))
+                updatedDom = precedingDom.union(set([b.get_name()]))
                 if updatedDom != self.dom[b.get_name()]:
                     changing = True
                     self.dom[b.get_name()] = updatedDom
@@ -33,41 +33,35 @@ class Dominance:
         successors = cfg.get_cfg()
         for m in blocks:
             for dominator in self.dom[m.get_name()]:
-                if dominator.get_name() not in self.domFrontier:
-                    self.domFrontier[dominator.get_name()] = set()
+                if dominator not in self.domFrontier:
+                    self.domFrontier[dominator] = set()
                 for s in successors[m.get_name()]:
-                    if not self.strictly_dominates(dominator, s):
-                        self.domFrontier[dominator.get_name()].add(s)
+                    if not (
+                        dominator in self.dom[s.get_name()]
+                        and dominator != s.get_name()
+                    ):
+                        self.domFrontier[dominator].add(s.get_name())
 
         # Finally, do dominator tree
-        self.idom: dict[str, set] = {}
+        self.idom: dict[str, str] = {}
         for b in blocks:
-            self.idom[b.get_name()] = set()
             for j in blocks:
                 if not self.strictly_dominates(b, j):
                     continue
 
+                # b strictly dominates j
+
                 # If k strictly dominates j, then it must also dom b, if b were the idom
                 isIdom = True
                 for k in blocks:
-                    if (
-                        k != b
-                        and self.strictly_dominates(k, j)
-                        and self.strictly_dominates(k, b)
-                    ):
+                    if self.strictly_dominates(k, j) and self.strictly_dominates(b, k):
                         isIdom = False
                         break
 
                 if not isIdom:
                     continue
 
-                self.idom[b.get_name()].add(j)
-
-    def get_dom_tree(self) -> dict[str, set]:
-        cpyTree = {}
-        for k, v in self.idom.items():
-            cpyTree[k] = list(v)
-        return cpyTree
+                self.idom[j.get_name()] = b.get_name()
 
     def get_dom_frontier(self) -> dict[str, list]:
         cpyFront = {}
@@ -76,13 +70,13 @@ class Dominance:
         return cpyFront
 
     def dominates(self, a: Block, i: Block) -> bool:
-        return a in self.dom[i.get_name()]
+        return a.get_name() in self.dom[i.get_name()]
 
     def strictly_dominates(self, a: Block, i: Block) -> bool:
         return self.dominates(a, i) and a != i
 
     def immediately_dominates(self, a: Block, i: Block) -> bool:
-        return i in self.idom[a.get_name()]
+        return i.get_name() in self.idom and a.get_name() == self.idom[i.get_name()]
 
     def verify(self) -> bool:
         successors = self.cfg.get_cfg()
