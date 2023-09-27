@@ -349,6 +349,8 @@ class CFG:
                 for branch in term["labels"]:
                     yield blk.get_name(), branch
                 lastBlock = None
+            elif term["op"] == "ret":
+                lastBlock = None
             else:
                 lastBlock = blk.get_name()
 
