@@ -90,7 +90,10 @@ class Block:
         self.instrs.insert(start, insn.insn)
 
     def insert_back(self, insn: Instruction) -> None:
-        self.instrs.append(insn.insn)
+        if self.get_terminator() is None:
+            self.instrs.append(insn.insn)
+        else:
+            self.instrs.insert(-1, insn.insn)
 
     def get_instrs(self) -> list[Any]:
         return self.instrs.copy()
@@ -242,7 +245,7 @@ class Block:
 
 
 class CFG:
-    def __init__(self, func: Any) -> None:
+    def __init__(self, func: Any, bundleLabels: bool = True) -> None:
         self.func = func.copy()
         # Generate blocks
         self.blocks = []
@@ -252,7 +255,7 @@ class CFG:
         cname = "entry.blk"
         for insn in self.func["instrs"]:
             if "op" in insn:
-                if len(labelStack) > 0:
+                if bundleLabels and len(labelStack) > 0:
                     if len(cblk) > 0:
                         self.blocks.append(Block(cname, cblk))
                         cblk = []
@@ -267,7 +270,13 @@ class CFG:
                     anon_blk_count += 1
                     cname = f"fallthru.blk.{anon_blk_count}"
             elif "label" in insn:
-                labelStack.append(insn)
+                if bundleLabels:
+                    labelStack.append(insn)
+                else:
+                    if len(cblk) > 0:
+                        self.blocks.append(Block(cname, cblk))
+                    cblk = [insn]
+                    cname = insn["label"]
             else:
                 raise Exception(f"bad Instruction {insn}")
 
@@ -399,6 +408,7 @@ class CFG:
         name: str = None,
         type: str = None,
         args: list[Any] = None,
+        bundleLabels: bool = True,
     ) -> CFG:
         returnFunc = func.copy()
         returnFunc["instrs"] = []
@@ -412,7 +422,7 @@ class CFG:
         if args is not None:
             returnFunc["args"] = args
 
-        return CFG(returnFunc)
+        return CFG(returnFunc, bundleLabels=bundleLabels)
 
     def from_list(
         func,

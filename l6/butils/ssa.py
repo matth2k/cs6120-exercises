@@ -1,16 +1,24 @@
-from copy import deepcopy
-from typing import Any
+from typing import Any, Generator
 from butils.cfg import Instruction, CFG, Block
 from butils.dominance import Dominance
-import random
 
 
 class SSABlock(Block):
-    def __init__(self, block: Block) -> None:
+    def __init__(self, block: Block, placed: bool = False) -> None:
         super().__init__(block.get_name(), block.instrs)
         # Store as k,v (varName, ssaPhiNodeInsn)
         self.phi_nodes = {}
-        self.placed = False
+        self.placed = placed
+        for insn in self.instrs:
+            if "op" in insn and insn["op"] == "phi":
+                self.phi_nodes[insn["dest"]] = Instruction(insn)
+
+    def pop_phi_nodes(self) -> Generator[tuple[str, str], None, None]:
+        if not self.placed:
+            raise Exception("Phi nodes not placed")
+        for var in self.get_phi_nodes():
+            self.instrs.remove(self.phi_nodes[var].insn)
+            yield var, self.phi_nodes[var].insn
 
     def insert_explicit_jmp(self, successors) -> None:
         i = 0
@@ -151,7 +159,8 @@ class SSA:
             ssab.write_phi_nodes()
             ssab.insert_explicit_jmp(self.successors[ssab.get_name()])
 
-        self.ssa_func = CFG.from_blocks(self.cfg.get_func(), self.blocks).get_func()
+        self.ssa_cfg = CFG.from_blocks(self.cfg.get_func(), self.blocks)
+        self.ssa_func = self.ssa_cfg.get_func()
 
     def push_var(self, var: str) -> str:
         name_stem = self.name_stem[var]
@@ -169,7 +178,7 @@ class SSA:
     def get_ssa_name(self, var: str) -> str:
         name_stem = self.name_stem[var]
         if name_stem not in self.ssa_stack or len(self.ssa_stack[name_stem]) == 0:
-            return name_stem + ".nil"
+            return "__undefined"
         return self.ssa_stack[name_stem][-1]
 
     def rename_recursively(self, blk: SSABlock):
@@ -200,7 +209,7 @@ class SSA:
                 )
 
         dominatedL = list(self.dom_tree[blk.get_name()])
-
+        dominatedL.sort(key=lambda x: self.blocks.index(self.blk_map[x]))
         if self.verboseF is not None:
             print(
                 f"Renaming {blk.get_name()} dominates {dominatedL}", file=self.verboseF
@@ -240,7 +249,31 @@ class SSA:
                     if "args" in insn:
                         for i in range(len(insn["args"])):
                             insn["args"][i] = insn["args"][i] + ".0"
-            tcfg = CFG.from_blocks(tcfg.get_func(), [redirect] + tcfg.get_blocks())
+            tcfg = CFG.from_blocks(
+                tcfg.get_func(), [redirect] + tcfg.get_blocks(), bundleLabels=True
+            )
             predecessors = tcfg.get_predecessors()
             blocks = tcfg.get_blocks()
         return tcfg
+
+    def from_ssa(func: Any) -> CFG:
+        cfg = CFG(func)
+        block_list = [SSABlock(b.copy(), True) for b in cfg.get_blocks()]
+        new_blocks = {p.get_name(): p for p in block_list}
+        for block in block_list:
+            for _, phi_insn in block.pop_phi_nodes():
+                for i, arg in enumerate(phi_insn["args"]):
+                    label = phi_insn["labels"][i]
+                    # if phi_insn["args"][i] == "__undefined":
+                    #     continue
+                    new_blocks[label].insert_back(
+                        Instruction(
+                            {
+                                "op": "id",
+                                "args": [phi_insn["args"][i]],
+                                "dest": phi_insn["dest"],
+                                "type": phi_insn["type"],
+                            }
+                        )
+                    )
+        return CFG.from_blocks(func, block_list)
