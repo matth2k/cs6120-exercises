@@ -107,7 +107,7 @@ class SSA:
         self.successors = self.cfg.get_successors_by_name()
         self.dom_info = Dominance(self.cfg)
         self.dom_frontier = self.dom_info.get_dom_frontier()
-        self.dom_tree = self.dom_info.dom_tree()
+        self.dom_downstream = self.dom_info.dom_downstream()
 
         # Make SSA blocks
         self.entry_blk_name = self.blocks[0].get_name()
@@ -208,8 +208,7 @@ class SSA:
                     self.get_ssa_name(var),
                 )
 
-        dominatedL = list(self.dom_tree[blk.get_name()])
-        dominatedL.sort(key=lambda x: self.blocks.index(self.blk_map[x]))
+        dominatedL = sorted(self.dom_downstream[blk.get_name()])
         if self.verboseF is not None:
             print(
                 f"Renaming {blk.get_name()} dominates {dominatedL}", file=self.verboseF
