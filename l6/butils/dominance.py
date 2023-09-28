@@ -69,6 +69,27 @@ class Dominance:
             cpyFront[k] = list(v)
         return cpyFront
 
+    def dom_downstream(self) -> None:
+        dominates_strictly = {k: set() for k in self.dom.keys()}
+        for k, v in self.dom.items():
+            for i in v:
+                if i != k:
+                    dominates_strictly[i].add(k)
+
+        dominates_downstream = {k: set() for k in self.dom.keys()}
+        for k, s in dominates_strictly.items():
+            for v in s:
+                dominates_downstream[k] = dominates_downstream[k].union(
+                    dominates_strictly[v]
+                )
+        my_children = {k: set() for k in dominates_strictly.keys()}
+        for k, s in dominates_strictly.items():
+            for v in s:
+                if v not in dominates_downstream[k]:
+                    my_children[k].add(v)
+
+        return my_children
+
     def dominates(self, a: Block, i: Block) -> bool:
         return a.get_name() in self.dom[i.get_name()]
 
