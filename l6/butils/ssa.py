@@ -178,7 +178,7 @@ class SSA:
     def get_ssa_name(self, var: str) -> str:
         name_stem = self.name_stem[var]
         if name_stem not in self.ssa_stack or len(self.ssa_stack[name_stem]) == 0:
-            return "__undefined"
+            return var + ".undef"
         return self.ssa_stack[name_stem][-1]
 
     def rename_recursively(self, blk: SSABlock):
