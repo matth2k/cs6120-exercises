@@ -26,7 +26,10 @@ struct LoopUnswitchPass : public LoopPass {
   static char ID;
   LoopUnswitchPass() : LoopPass(ID) {}
 
-  virtual bool runOnLoop(Loop *L, LPPassManager &LPM) { return false; }
+  virtual bool runOnLoop(Loop *L, LPPassManager &LPM) {
+    llvm::errs() << "loop name: " << L->getName() << "\n";
+    return false;
+  }
   virtual bool doInitialization(Loop *L, LPPassManager &LPM) { return false; }
   virtual bool doFinalization() { return false; }
 };
