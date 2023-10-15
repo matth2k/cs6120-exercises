@@ -4,10 +4,12 @@
 #include "llvm/Support/raw_ostream.h"
 #include <cassert>
 #include <cstdint>
+#include <llvm-15/llvm/Analysis/ValueTracking.h>
 #include <llvm-15/llvm/IR/Constants.h>
 #include <llvm-15/llvm/IR/DerivedTypes.h>
 #include <llvm-15/llvm/IR/InstrTypes.h>
 #include <llvm-15/llvm/IR/Instruction.h>
+#include <llvm-15/llvm/IR/Instructions.h>
 #include <llvm-15/llvm/IR/Operator.h>
 #include <llvm-15/llvm/IR/PassManager.h>
 #include <llvm-15/llvm/Passes/OptimizationLevel.h>
@@ -24,14 +26,40 @@ namespace {
 
 struct LoopUnswitchPass : public PassInfoMixin<LoopUnswitchPass> {
 
+  // LoopInfo.cpp
+  bool instIsInvariant(Loop &L, Value &V) {
+    if (auto I = dyn_cast<Instruction>(&V))
+      return !L.contains(I);
+    return true;
+  }
+
   PreservedAnalyses run(Loop &L, LoopAnalysisManager &LAM,
                         LoopStandardAnalysisResults &AR, LPMUpdater &U) {
     DenseSet<Instruction *> loopInvariant;
-    llvm::errs() << "loop name: \n";
-    for (auto &BB : L.getBlocks()) {
-      for (auto &I : BB->getInstList()) {
-        if (auto *val = dyn_cast<Value>(&I)) {
-          llvm::errs() << *val << "\n";
+    if (!L.getLoopPreheader())
+      return PreservedAnalyses::all();
+    bool changing = true;
+    while (changing) {
+      changing = false;
+      for (auto &BB : L.getBlocks()) {
+        SmallVector<Instruction *> instToMove;
+        for (auto &I : BB->getInstList()) {
+          bool loopInvariant = !dyn_cast<BranchInst>(&I) &&
+                               isSafeToSpeculativelyExecute(&I) &&
+                               !I.mayReadFromMemory();
+          for (int i = 0; i < I.getNumOperands(); ++i) {
+            if (!instIsInvariant(L, *I.getOperand(i))) {
+              loopInvariant = false;
+              break;
+            }
+          }
+          if (loopInvariant)
+            instToMove.push_back(&I);
+        }
+        for (auto I : instToMove) {
+          changing = true;
+          errs() << "moving instruction: " << *I << "\n";
+          I->moveBefore(L.getLoopPreheader()->getTerminator());
         }
       }
     }
@@ -51,7 +79,6 @@ llvmGetPassPluginInfo() {
                 [](StringRef Name, LoopPassManager &LPM,
                    ArrayRef<PassBuilder::PipelineElement>) {
                   if (Name == "loop-unswitch") {
-                    llvm::errs() << "loop unswitching pass for loop\n";
                     LPM.addPass(LoopUnswitchPass());
                     return true;
                   }

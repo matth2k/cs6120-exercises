@@ -6,7 +6,11 @@
 int main(int argc, char *argv[]) {
 HELLO_LOOP:
   for (int i = 0; i < 5; ++i) {
-    printf("Hello World %d\n", i);
+    int j = argc;
+    int y = 2 * i;
+    int z = j + y;
+    int invariant = argc * argc * argc;
+    printf("Hello World %d %d\n", z, invariant);
   }
   return 0;
 }
