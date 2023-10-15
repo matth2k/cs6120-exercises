@@ -46,7 +46,7 @@ struct LoopUnswitchPass : public PassInfoMixin<LoopUnswitchPass> {
         for (auto &I : BB->getInstList()) {
           bool loopInvariant = !dyn_cast<BranchInst>(&I) &&
                                isSafeToSpeculativelyExecute(&I) &&
-                               !I.mayReadFromMemory();
+                               !I.mayReadOrWriteMemory();
           for (int i = 0; i < I.getNumOperands(); ++i) {
             if (!instIsInvariant(L, *I.getOperand(i))) {
               loopInvariant = false;
