@@ -7,6 +7,7 @@
 #include <llvm-15/llvm/IR/Constants.h>
 #include <llvm-15/llvm/IR/DerivedTypes.h>
 #include <llvm-15/llvm/IR/InstrTypes.h>
+#include <llvm-15/llvm/IR/Instruction.h>
 #include <llvm-15/llvm/IR/Operator.h>
 #include <llvm-15/llvm/IR/PassManager.h>
 #include <llvm-15/llvm/Passes/OptimizationLevel.h>
@@ -25,7 +26,15 @@ struct LoopUnswitchPass : public PassInfoMixin<LoopUnswitchPass> {
 
   PreservedAnalyses run(Loop &L, LoopAnalysisManager &LAM,
                         LoopStandardAnalysisResults &AR, LPMUpdater &U) {
+    DenseSet<Instruction *> loopInvariant;
     llvm::errs() << "loop name: \n";
+    for (auto &BB : L.getBlocks()) {
+      for (auto &I : BB->getInstList()) {
+        if (auto *val = dyn_cast<Value>(&I)) {
+          llvm::errs() << *val << "\n";
+        }
+      }
+    }
     return PreservedAnalyses::all();
   }
 };
