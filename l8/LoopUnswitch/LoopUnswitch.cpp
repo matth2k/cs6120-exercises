@@ -4,6 +4,9 @@
 #include "llvm/Support/raw_ostream.h"
 #include <cassert>
 #include <cstdint>
+#include <llvm-15/llvm/Analysis/AliasAnalysis.h>
+#include <llvm-15/llvm/Analysis/LoopAnalysisManager.h>
+#include <llvm-15/llvm/Analysis/MemoryDependenceAnalysis.h>
 #include <llvm-15/llvm/Analysis/ValueTracking.h>
 #include <llvm-15/llvm/IR/Constants.h>
 #include <llvm-15/llvm/IR/DerivedTypes.h>
@@ -47,9 +50,15 @@ struct LoopUnswitchPass : public PassInfoMixin<LoopUnswitchPass> {
       for (auto &BB : L.getBlocks()) {
         SmallVector<Instruction *> instToMove;
         for (auto &I : BB->getInstList()) {
-          bool loopInvariant = !dyn_cast<BranchInst>(&I) &&
-                               isSafeToSpeculativelyExecute(&I) &&
-                               !I.mayReadOrWriteMemory();
+          bool loopInvariant = isSafeToSpeculativelyExecute(&I);
+
+          if (I.mayReadOrWriteMemory())
+            for (auto &F : BB->getInstList()) {
+              loopInvariant &= AR.AA.isNoAlias(&I, &F);
+              if (!loopInvariant)
+                break;
+            }
+
           for (int i = 0; i < I.getNumOperands(); ++i) {
             if (!instIsInvariant(L, *I.getOperand(i))) {
               loopInvariant = false;
