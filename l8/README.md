@@ -33,7 +33,7 @@
 
 
 * __Anything Hard or Interesting?__
-  * It was hard to use the new LLVM pass manager as most of the documentation online was for the old one. I spend a long time setting up the code to register my loop pass as hook into `PipelineParsing` using the `LoopPassManager`.
+  * It was hard to use the new LLVM pass manager as most of the documentation online was for the old one. I spent a long time trying to register my loop pass as hook into `PipelineParsing` using the `LoopPassManager`.
   * It was hard to find test cases to utilize LICM. I'm not sure I achieved my goal, but in any case [this page](https://people.csail.mit.edu/smcc/projects/single-file-programs/) was a really good resouce for finding large single-file programs.
   * I was looking into [MemorySSA](https://llvm.org/docs/MemorySSA.html) to find invariant memory instructions, but I was too limited on time. It looks like the people working on LLVM are trying to model the memory dependence analysis problem differently.
 
