@@ -27,7 +27,7 @@
 
   As you can see from the chart above, LICM does not give raw performance gains without tackling memory operations. Most of the benchmarks, the majority of moved instructions are `getelementptr`'s. I'm not sure how these GEPS are getting lowered, but they may not even create `add` instructions because x86 instructions have their own offset field. Hence, the only instructions saved on are things like `sub`, `add`, `sext`, and `mul`.
 
-  The only benchmark I saw a statistically significant speedup on is TSVC ([Test Suite for Vectorizing Compilers](https://dl.acm.org/doi/10.5555/62972.62987)). This maybe? makes sense as hopefully these benchmarks are less memory heavy comparatively speaking. Here, I could see some `icmp` and `fcmp` operations being moved which was a good sign.
+  The only benchmark I saw a statistically significant speedup on is TSVC ([Test Suite for Vectorizing Compilers](https://dl.acm.org/doi/10.5555/62972.62987)). This might make sens, because these benchmarks are not as memory heavy comparatively speaking. Here, I could see some `icmp` and `fcmp` operations being moved which was a good sign.
 
   Overall, this assignment is leaving me very confused, because I don't have good intuition on how some of these LLVM instructions are lowered to x86. I even made sure to use `-O0` on the LLVM static compiler. I don't know how I could be removing so many instructions and not seeing a clear speedup. My future work would be to look at more auto-vectorization testcases to look for more clues.
 
