@@ -7,6 +7,6 @@ cat $1.moved
 echo "Number of instructions moved in $1:"
 cat $1.moved | grep "moving" | wc -l
 llvm-dis $1.tmp -o $1.ll.opt
-llc -filetype=obj $1.ll.opt -o $1.o
+llc -O0 -filetype=obj $1.ll.opt -o $1.o
 clang -no-pie $1.o -o $1.out -lm
 rm $1.tmp $1.o $1.moved
