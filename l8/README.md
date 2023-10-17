@@ -10,7 +10,7 @@
     * `inline` allows me to find loop-invariant function executions.
     * If I did not run the `mem2reg` pass, all the loop-invariant code was hidden behind memory operations.
     * `dse` (dead store elimination) improves the changes that my loop body will be alias-free.
-  * You can see the rest of my tool flow in [optCode.sh](https://github.com/matth2k/cs6120-exercises/blob/main/l8/optCode.sh)
+  * You can see the rest of my tool flow in [optCode.sh](https://github.com/matth2k/cs6120-exercises/blob/main/l8/optCode.sh). I used LLVM version 15.0.7.
 
 * __Evaluation__
   * Evaluating my LICM pass for performance was tricky, because many simple applications are bound by memory operations which are not loop-invariant. Consequently, Amdahl's law would suggest that it is going to be hard for me to notice any speedups without LICM on loads and stores. I wanted to try to implement loop unswitching as well to see more performance gains, but I did not have enough time.
@@ -30,14 +30,6 @@
   The only benchmark I saw a statistically significant speedup on is TSVC ([Test Suite for Vectorizing Compilers](https://dl.acm.org/doi/10.5555/62972.62987)). This might make sense, because these benchmarks are not as memory heavy comparatively speaking. Here, I could see some `icmp` and `fcmp` operations being moved which was a good sign.
 
   Overall, this assignment is leaving me very confused, because I don't have good intuition on how some of these LLVM instructions are lowered to x86. I even made sure to use `-O0` on the LLVM static compiler. I don't know how I could be removing so many instructions and not seeing a clear speedup. My future work would be to look at more auto-vectorization testcases to look for more clues.
-
-  LLVM Version:
-  ```
-  Ubuntu LLVM version 15.0.7
-    Optimized build.
-    Default target: x86_64-pc-linux-gnu
-    Host CPU: alderlake
-  ```
 
 
 * __Anything Hard or Interesting?__
