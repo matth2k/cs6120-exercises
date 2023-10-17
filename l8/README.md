@@ -13,7 +13,7 @@
   * You can see the rest of my tool flow in [optCode.sh](https://github.com/matth2k/cs6120-exercises/blob/main/l8/optCode.sh)
 
 * __Evaluation__
-  * Evaluating my LICM pass for performance was tricky, because many simple applications are bound by memory operations which are not loop-invariant. Consequently, Amdahl's law would suggest that it is going to be hard for me to notice any speedups with only LICM. I wanted to try to implement loop unswitching as well to see more performance gains, but I did not have enough time.
+  * Evaluating my LICM pass for performance was tricky, because many simple applications are bound by memory operations which are not loop-invariant. Consequently, Amdahl's law would suggest that it is going to be hard for me to notice any speedups without LICM on loads and stores. I wanted to try to implement loop unswitching as well to see more performance gains, but I did not have enough time.
   * I evaluated numerous micro-benchmarks (invariant func call, hello world loop, ...), but focused mainly on 5 large benchmarks ([bzip2](https://sourceware.org/bzip2/), [gcc 3.5](https://gcc.gnu.org/), [oggenc](https://www.rarewares.org/ogg-oggenc.php), [TSVC](https://dl.acm.org/doi/10.5555/62972.62987), [STMR](https://www.cs.toronto.edu/~frank/csc2501/Readings/R2_Porter/Porter-1980.pdf)).
 
   | Benchmark     | LICM Instructions Moved | Lines of LLVM | Testcase                     | Speedup |
