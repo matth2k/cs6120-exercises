@@ -36,6 +36,7 @@ struct LoopUnswitchPass : public PassInfoMixin<LoopUnswitchPass> {
   PreservedAnalyses run(Loop &L, LoopAnalysisManager &LAM,
                         LoopStandardAnalysisResults &AR, LPMUpdater &U) {
     DenseSet<Instruction *> loopInvariant;
+    int movedCount = 0;
     if (!L.getLoopPreheader())
       return PreservedAnalyses::all();
     bool changing = true;
@@ -58,7 +59,8 @@ struct LoopUnswitchPass : public PassInfoMixin<LoopUnswitchPass> {
         }
         for (auto I : instToMove) {
           changing = true;
-          errs() << "moving instruction: " << *I << "\n";
+          movedCount++;
+          errs() << "LoopUnswitch: moving" << *I << "\n";
           I->moveBefore(L.getLoopPreheader()->getTerminator());
         }
       }
