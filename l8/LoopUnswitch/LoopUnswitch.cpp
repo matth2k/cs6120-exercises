@@ -22,6 +22,8 @@ using namespace llvm;
 // References:
 // * Hsu, 2021
 // * discourse.llvm.org/t/how-to-write-a-loop-pass-using-new-pass-manager/70240
+// * people.csail.mit.edu/smcc/projects/single-file-programs/
+// * llvm.org/doxygen/LoopInfo_8cpp_source.html
 namespace {
 
 struct LoopUnswitchPass : public PassInfoMixin<LoopUnswitchPass> {
