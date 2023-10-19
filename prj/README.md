@@ -20,8 +20,9 @@ Allo's APIs already emit a combination of MLIR dialects (SCF, Affine, Arith, Mem
 ## How will you empirically measure success?
 
 These are the metrics we hope to show improvements on compared to C-based HLS:
-* reduce LOC (lines of code)
+* increased throughput
+* reduced LOC (lines of code)
 * faster compile times
 * faster RTL simulation
-* a wider and more incremental design space to explore PPA (power, performance, area)
+* a wider and more incremental design space for exploring PPA (power, performance, area) tradeoffs
 * number of AMC bugs caught as a result of faster design turnaround times
