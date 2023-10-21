@@ -1,4 +1,4 @@
-# Project Proposal (Matt Hofmann and Yixiao Du)
+# Frontend Integration for AMC (Accelerator Memory Compiler) - Matt Hofmann and Yixiao Du
 
 ## Background
 Our research area is in accelerator design, HLS (high-level synthesis), and FPGA CAD tools in general. For our course project, we want to continue developing and evaluating our own open-source HLS tool flow as an alternative to commercial EDA tools. Here is a list of existing components belonging to our proposed flow:
