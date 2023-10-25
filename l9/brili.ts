@@ -50,7 +50,7 @@ export class Heap {
     private allocPtr : number
     constructor() {
         this.storage = new Map()
-        this.maxSize = 10
+        this.maxSize = 20
         this.allocPtr = 0
         this.fromSpace = 0
         this.toSpace = this.maxSize / 2
@@ -64,24 +64,27 @@ export class Heap {
         return;
     }
 
-    private doCollection(env: Env) {
+    private doCollection(roots: Set<Pointer>) {
         let reallocPtr = this.toSpace;
         let newHeap = new Map<number, Value[]>();
         let oldSize = this.storage.size;
-        let vals: [Key, Pointer][] = new Array();
-        for (let [key, value] of env) {    
-            if (value.hasOwnProperty("loc")) {
-                let pointer = <Pointer>value;
-                let data = this.storage.get(pointer.loc.base);
-                if (data) {
+        let vals = new Set<Pointer>();
+        let remapped = new Map<number, number>();
+        for (let pointer of roots) {    
+            let data = this.storage.get(pointer.loc.base);
+            if (data) {
+                let newAddr = remapped.get(pointer.loc.base);
+                if (newAddr) {
+                    pointer.loc = new Key(newAddr, pointer.loc.offset);
+                } else {
                     newHeap.set(reallocPtr, data);
-                    pointer.loc = new Key(reallocPtr, 0);
-                    env.set(key, pointer);
+                    remapped.set(pointer.loc.base, reallocPtr);
+                    pointer.loc = new Key(reallocPtr, pointer.loc.offset);
                     for (let i = 0; i < data.length; i++)  {
                         let e = data[i];
-                        if (e.hasOwnProperty("loc")) {
+                        if (e && e.hasOwnProperty("loc")) {
                             let edge = <Pointer>e;
-                            vals.push([new Key(reallocPtr, i), edge]);
+                            vals.add(edge);
                         }
                     }
                     reallocPtr = reallocPtr + data.length;
@@ -89,24 +92,28 @@ export class Heap {
             }
         }
 
-        while (vals.length > 0) {
+        while (vals.size > 0) {
             console.log("In the nonroots")
-            let kv = vals.pop();
-            let key = kv![0];
-            let pointer = kv![1];
+            let pointer = vals.values().next().value;
+            vals.delete(pointer);
             let data = this.storage.get(pointer.loc.base);
             if (data) {
-                newHeap.set(reallocPtr, data);
-                pointer.loc = new Key(reallocPtr, 0);
-                this.write(key, pointer);
-                for (let i = 0; i < data.length; i++)  {
-                    let e = data[i];
-                    if (e.hasOwnProperty("loc")) {
-                        let edge = <Pointer>e;
-                        vals.push([new Key(reallocPtr, i), edge]);
+                let newAddr = remapped.get(pointer.loc.base);
+                if (newAddr) {
+                    pointer.loc = new Key(newAddr, pointer.loc.offset);
+                } else {
+                    newHeap.set(reallocPtr, data);
+                    remapped.set(pointer.loc.base, reallocPtr);
+                    pointer.loc = new Key(reallocPtr, pointer.loc.offset);
+                    for (let i = 0; i < data.length; i++)  {
+                        let e = data[i];
+                        if (e && e.hasOwnProperty("loc")) {
+                            let edge = <Pointer>e;
+                            vals.add(edge);
+                        }
                     }
+                    reallocPtr = reallocPtr + data.length;
                 }
-                reallocPtr = reallocPtr + data.length;
             }
         }
 
@@ -122,12 +129,12 @@ export class Heap {
 
     }
 
-    alloc(amt:number, env: Env): Key {
+    alloc(amt:number, roots: Set<Pointer>): Key {
         if (amt <= 0) {
             throw error(`cannot allocate ${amt} entries`);
         }
         if (this.allocPtr + amt > this.fromSpace + this.maxSize / 2) {
-           this.doCollection(env);
+           this.doCollection(roots);
         }
         if (this.allocPtr + amt > this.fromSpace + this.maxSize / 2) {
             throw error(`Out of memory. Req size ${amt}. fromSpace size ${this.maxSize/2}`);
@@ -277,13 +284,13 @@ function findFunc(func: bril.Ident, funcs: readonly bril.Function[]) {
   return matches[0];
 }
 
-function alloc(ptrType: bril.ParamType, amt:number, heap:Heap, env:Env): Pointer {
+function alloc(ptrType: bril.ParamType, amt:number, heap:Heap, roots:Set<Pointer>): Pointer {
   if (typeof ptrType != 'object') {
     throw error(`unspecified pointer type ${ptrType}`);
   } else if (amt <= 0) {
     throw error(`must allocate a positive amount of memory: ${amt} <= 0`);
   } else {
-    let loc = heap.alloc(amt, env)
+    let loc = heap.alloc(amt, roots);
     let dataType = ptrType.ptr;
     return {
       loc: loc,
@@ -376,6 +383,7 @@ let NEXT: Action = {"action": "next"};
  * The interpreter state that's threaded through recursive calls.
  */
 type State = {
+  roots: Set<Pointer>,
   env: Env,
   readonly heap: Heap,
   readonly funcs: readonly bril.Function[],
@@ -403,6 +411,7 @@ function evalCall(instr: bril.Operation, state: State): Action {
   }
 
   let newEnv: Env = new Map();
+  let newRoots: Set<Pointer> = new Set<Pointer>();
 
   // Check arity of arguments and definition.
   let params = func.args || [];
@@ -424,8 +433,15 @@ function evalCall(instr: bril.Operation, state: State): Action {
     newEnv.set(params[i].name, value);
   }
 
+  for (let [key, value] of state.env) {
+    if (value.hasOwnProperty('loc')) {
+      newRoots.add(<Pointer>value);
+    }
+  }
+
   // Invoke the interpreter on the function.
   let newState: State = {
+    roots: newRoots,
     env: newEnv,
     heap: state.heap,
     funcs: state.funcs,
@@ -707,7 +723,13 @@ function evalInstr(instr: bril.Instruction, state: State): Action {
     if (!(typeof typ === "object" && typ.hasOwnProperty('ptr'))) {
       throw error(`cannot allocate non-pointer type ${instr.type}`);
     }
-    let ptr = alloc(typ, Number(amt), state.heap, state.env);
+    let cRoots = new Set<Pointer>(state.roots);
+    for (let [key, value] of state.env) {
+        if (value.hasOwnProperty('loc')) {
+            cRoots.add(<Pointer>value);
+        }
+    }
+    let ptr = alloc(typ, Number(amt), state.heap, cRoots);
     state.env.set(instr.dest, ptr);
     return NEXT;
   }
@@ -1004,6 +1026,7 @@ function evalProg(prog: bril.Program) {
   let newEnv = parseMainArguments(expected, args);
 
   let state: State = {
+    roots: new Set<Pointer>(),
     funcs: prog.functions,
     heap,
     env: newEnv,
