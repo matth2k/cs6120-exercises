@@ -41,9 +41,9 @@ export class Key {
 /**
  * A Heap maps Keys to arrays of a given type.
  */
-export class Heap<X> {
+export class Heap {
 
-    private storage: Map<number, X[]>
+    private storage: Map<number, Value[]>
     private readonly maxSize : number
     private fromSpace : number
     private toSpace: number
@@ -66,10 +66,10 @@ export class Heap<X> {
 
     private doCollection(env: Env) {
         let reallocPtr = this.toSpace;
-        let newHeap = new Map<number, X[]>();
+        let newHeap = new Map<number, Value[]>();
         let oldSize = this.storage.size;
-        for (let [key, value] of env) {
-            // is a ptr
+        let vals: [Key, Pointer][] = new Array();
+        for (let [key, value] of env) {    
             if (value.hasOwnProperty("loc")) {
                 let pointer = <Pointer>value;
                 let data = this.storage.get(pointer.loc.base);
@@ -77,10 +77,39 @@ export class Heap<X> {
                     newHeap.set(reallocPtr, data);
                     pointer.loc = new Key(reallocPtr, 0);
                     env.set(key, pointer);
+                    for (let i = 0; i < data.length; i++)  {
+                        let e = data[i];
+                        if (e.hasOwnProperty("loc")) {
+                            let edge = <Pointer>e;
+                            vals.push([new Key(reallocPtr, i), edge]);
+                        }
+                    }
                     reallocPtr = reallocPtr + data.length;
                 }
             }
         }
+
+        while (vals.length > 0) {
+            console.log("In the nonroots")
+            let kv = vals.pop();
+            let key = kv![0];
+            let pointer = kv![1];
+            let data = this.storage.get(pointer.loc.base);
+            if (data) {
+                newHeap.set(reallocPtr, data);
+                pointer.loc = new Key(reallocPtr, 0);
+                this.write(key, pointer);
+                for (let i = 0; i < data.length; i++)  {
+                    let e = data[i];
+                    if (e.hasOwnProperty("loc")) {
+                        let edge = <Pointer>e;
+                        vals.push([new Key(reallocPtr, i), edge]);
+                    }
+                }
+                reallocPtr = reallocPtr + data.length;
+            }
+        }
+
         this.storage = newHeap;
         let tmp = this.fromSpace;
         this.fromSpace = this.toSpace;
@@ -119,7 +148,7 @@ export class Heap<X> {
         }
     }
 
-    write(key: Key, val: X) {
+    write(key: Key, val: Value) {
         let data = this.storage.get(key.base);
         if (data && data.length > key.offset && key.offset >= 0) {
             data[key.offset] = val;
@@ -128,7 +157,7 @@ export class Heap<X> {
         }
     }
 
-    read(key: Key): X {
+    read(key: Key): Value {
         let data = this.storage.get(key.base);
         if (data && data.length > key.offset && key.offset >= 0) {
             return data[key.offset];
@@ -248,7 +277,7 @@ function findFunc(func: bril.Ident, funcs: readonly bril.Function[]) {
   return matches[0];
 }
 
-function alloc(ptrType: bril.ParamType, amt:number, heap:Heap<Value>, env:Env): Pointer {
+function alloc(ptrType: bril.ParamType, amt:number, heap:Heap, env:Env): Pointer {
   if (typeof ptrType != 'object') {
     throw error(`unspecified pointer type ${ptrType}`);
   } else if (amt <= 0) {
@@ -348,7 +377,7 @@ let NEXT: Action = {"action": "next"};
  */
 type State = {
   env: Env,
-  readonly heap: Heap<Value>,
+  readonly heap: Heap,
   readonly funcs: readonly bril.Function[],
 
   // For profiling: a total count of the number of instructions executed.
@@ -954,7 +983,7 @@ function parseMainArguments(expected: bril.Argument[], args: string[]) : Env {
 }
 
 function evalProg(prog: bril.Program) {
-  let heap = new Heap<Value>()
+  let heap = new Heap()
   let main = findFunc("main", prog.functions);
   if (main === null) {
     console.warn(`no main function defined, doing nothing`);
