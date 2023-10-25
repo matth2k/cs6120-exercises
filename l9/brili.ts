@@ -50,7 +50,7 @@ export class Heap {
     private allocPtr : number
     constructor() {
         this.storage = new Map()
-        this.maxSize = 20
+        this.maxSize = 16384
         this.allocPtr = 0
         this.fromSpace = 0
         this.toSpace = this.maxSize / 2
@@ -64,7 +64,7 @@ export class Heap {
         return;
     }
 
-    private doCollection(roots: Set<Pointer>) {
+    doCollection(roots: Set<Pointer>) {
         let reallocPtr = this.toSpace;
         let newHeap = new Map<number, Value[]>();
         let oldSize = this.storage.size;
@@ -93,7 +93,7 @@ export class Heap {
         }
 
         while (vals.size > 0) {
-            console.log("In the nonroots")
+            console.error("In the nonroots")
             let pointer = vals.values().next().value;
             vals.delete(pointer);
             let data = this.storage.get(pointer.loc.base);
@@ -123,9 +123,9 @@ export class Heap {
         this.toSpace = tmp;
         this.allocPtr = reallocPtr;
 
-        console.log("Ran garbage collection");
-        console.log(`Old heap size: ${oldSize}`);
-        console.log(`New heap size: ${this.storage.size}`);
+        if (oldSize - this.storage.size > 0) {
+            console.error(`GC freed: ${oldSize - this.storage.size}`);
+        }
 
     }
 
@@ -133,7 +133,8 @@ export class Heap {
         if (amt <= 0) {
             throw error(`cannot allocate ${amt} entries`);
         }
-        if (this.allocPtr + amt > this.fromSpace + this.maxSize / 2) {
+        // Run on every allocation
+        if (this.allocPtr + amt > this.fromSpace + this.maxSize / 2 || true) {
            this.doCollection(roots);
         }
         if (this.allocPtr + amt > this.fromSpace + this.maxSize / 2) {
@@ -512,6 +513,15 @@ function evalInstr(instr: bril.Instruction, state: State): Action {
   if (state.specparent && ['call', 'ret'].includes(instr.op)) {
     throw error(`${instr.op} not allowed during speculation`);
   }
+
+  // Run every instruction
+  let cRoots = new Set<Pointer>(state.roots);
+  for (let [key, value] of state.env) {
+    if (value.hasOwnProperty('loc')) {
+      cRoots.add(<Pointer>value);
+    }
+  }
+  state.heap.doCollection(cRoots);
 
   switch (instr.op) {
   case "const":
@@ -1038,7 +1048,7 @@ function evalProg(prog: bril.Program) {
   evalFunc(main, state);
 
   if (!heap.isEmpty()) {
-    console.log(`Some memory locations have not been freed by end of execution.`);
+    console.error(`Some memory locations have not been freed by end of execution.`);
   }
 
   if (profiling) {

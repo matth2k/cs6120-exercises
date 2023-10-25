@@ -1,0 +1,17 @@
+benchmarks = '/home/matth2k/bril/benchmarks/mem/*.bril'
+
+# add benchmarks via Makefile
+extract = 'total_dyn_inst: (.*)'
+
+[runs.baseline]
+pipeline = [
+    "bril2json",
+    "brili -p {args}",
+]
+
+[runs.gc]
+pipeline = [
+    "bril2json",
+    "python3 ./removeFree.py",
+    "deno run ./brili.ts -p {args}",
+]
