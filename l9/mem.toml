@@ -1,7 +1,7 @@
 benchmarks = '/home/matth2k/bril/benchmarks/mem/*.bril'
 
 # add benchmarks via Makefile
-extract = 'total_dyn_inst: (.*)'
+extract = 'footprint: (.*)'
 
 [runs.baseline]
 pipeline = [
