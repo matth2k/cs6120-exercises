@@ -48,12 +48,14 @@ export class Heap {
     private fromSpace : number
     private toSpace: number
     private allocPtr : number
+    footPrint : number
     constructor() {
         this.storage = new Map()
         this.maxSize = 16384
         this.allocPtr = 0
         this.fromSpace = 0
         this.toSpace = this.maxSize / 2
+        this.footPrint = 0;
     }
 
     isEmpty(): boolean {
@@ -74,7 +76,7 @@ export class Heap {
             let data = this.storage.get(pointer.loc.base);
             if (data) {
                 let newAddr = remapped.get(pointer.loc.base);
-                if (newAddr) {
+                if (remapped.has(pointer.loc.base)) {
                     pointer.loc = new Key(newAddr, pointer.loc.offset);
                 } else {
                     newHeap.set(reallocPtr, data);
@@ -117,6 +119,7 @@ export class Heap {
             }
         }
 
+        this.footPrint = reallocPtr - this.toSpace > this.footPrint? reallocPtr - this.toSpace : this.footPrint;
         this.storage = newHeap;
         let tmp = this.fromSpace;
         this.fromSpace = this.toSpace;
@@ -143,6 +146,7 @@ export class Heap {
         let newPtr = this.allocPtr;
         this.allocPtr = this.allocPtr + amt;
         this.storage.set(newPtr, new Array(amt));
+        this.footPrint = this.allocPtr - this.fromSpace > this.footPrint? this.allocPtr - this.fromSpace : this.footPrint;
         return new Key(newPtr, 0);
     }
 
@@ -1053,6 +1057,7 @@ function evalProg(prog: bril.Program) {
 
   if (profiling) {
     console.error(`total_dyn_inst: ${state.icount}`);
+    console.error(`footprint: ${state.heap.footPrint}`);
   }
 
 }
