@@ -22,18 +22,19 @@
 
   | Benchmark         | Memory Footprint (num elements) |
   | ----------------- | ------------------------------- |
-  | major-elm         | 9                               |
-  | quicksort-hoare   | 250                             |
-  | two-sum           | 20                              |
+  | major-elm         | 3                               |
+  | vsmul             | 6119                            |
+  | quicksort-hoare   | 100                             |
+  | two-sum           | 6                               |
   | adj2csr           | 3073                            |
-  | quicksort         | 24                              |
-  | quickselect       | 24                              |
-  | max-subarray      | 20                              |
-  | adler32           | 1024                            |
-  | bubblesort        | 15                              |
-  | binary-search     | 15                              |
-  | fib               | 40                              |
-  | sieve             | 200                             |
+  | quicksort         | 6                               |
+  | quickselect       | 6                               |
+  | max-subarray      | 10                              |
+  | adler32           | 512                             |
+  | bubblesort        | 5                               |
+  | binary-search     | 5                               |
+  | fib               | 10                              |
+  | sieve             | 100                             |
 
   You could probably accomplish even lower numbers if you applied some more dead code optimization passes.
 
