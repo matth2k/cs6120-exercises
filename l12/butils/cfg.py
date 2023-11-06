@@ -243,7 +243,7 @@ class Block:
                     updatedIntervals[insn["dest"]] = (None, None)
         return updatedIntervals
     
-    def merge_blocks(blocks: list[Block]):
+    def merge_blocks(blocks: list[Block]) -> Block:
         newBlockName = f"merged.{blocks[0].get_name()}.thru.{blocks[-1].get_name()}"
         newBlock = Block(newBlockName, [])
         newBlock.instrs.append({"label": newBlockName})
@@ -255,6 +255,12 @@ class Block:
         if blocks[-1].get_terminator() is not None:
             newBlock.instrs.append(blocks[-1].get_terminator().copy())
         return newBlock
+    
+    def make_speculative(self) -> None:
+        if self.get_terminator() is not None and self.get_terminator()["op"] == "ret":
+            raise Exception("Cannot make a return block speculative")
+        self.insert_front(Instruction({"op": "speculate"}))
+        ## TODO: add commit and replace conditions with guards
 
 
 class CFG:
