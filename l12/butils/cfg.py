@@ -243,24 +243,45 @@ class Block:
                     updatedIntervals[insn["dest"]] = (None, None)
         return updatedIntervals
     
-    def merge_blocks(blocks: list[Block]) -> Block:
+    def merge_blocks(blocks: list[Block], cfg: CFG, speculative: bool = True) -> Block:
         newBlockName = f"merged.{blocks[0].get_name()}.thru.{blocks[-1].get_name()}"
         newBlock = Block(newBlockName, [])
         newBlock.instrs.append({"label": newBlockName})
-        for blk in blocks:
+        for i, blk in enumerate(blocks):
             for insn in blk.instrs:
-                if "label" in insn or insn == blk.get_terminator():
+                if "label" in insn:
                     continue
+                
+                if insn == blk.get_terminator():
+                    if speculative and i + 1 < len(blocks) and insn["op"] == "br":
+                        speculatedBlock = blocks[i + 1].get_name()
+                        cond = insn["args"][0]
+                        labels = insn["labels"]
+                        if speculatedBlock == cfg.get_block(labels[0]).get_name():
+                            newBlock.instrs.append({"op": "guard", "args": [cond], "labels" : [blocks[0].get_name()]})
+                        elif speculatedBlock == cfg.get_block(labels[1]).get_name():
+                            newBlock.instrs.append({"op": "not", "args": [cond], "type": "bool", "dest" : "not."+cond})
+                            newBlock.instrs.append({"op": "guard", "args": ["not."+cond], "labels" : [blocks[0].get_name()]})
+                        else:
+                            continue
+                            # TODO: error out
+                            # raise Exception("Speculated block not in trace")
+                        continue
+                            
+                    else:
+                        continue
                 newBlock.instrs.append(insn.copy())
         if blocks[-1].get_terminator() is not None:
             newBlock.instrs.append(blocks[-1].get_terminator().copy())
+        if speculative:
+            newBlock.make_speculative()
         return newBlock
     
     def make_speculative(self) -> None:
-        if self.get_terminator() is not None and self.get_terminator()["op"] == "ret":
-            raise Exception("Cannot make a return block speculative")
+        # if self.get_terminator() is not None and self.get_terminator()["op"] == "ret":
+        #     raise Exception("Cannot make a return block speculative")
         self.insert_front(Instruction({"op": "speculate"}))
-        ## TODO: add commit and replace conditions with guards
+        self.insert_back(Instruction({"op": "commit"}))
 
 
 class CFG:

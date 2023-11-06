@@ -21,7 +21,7 @@ if __name__ == "__main__":
     brilProgram = json.load(args.input)
     cfgs = [CFG(func) for func in brilProgram["functions"]]
 
-    result_funcs = [CFG.from_blocks(cfg.get_func(), [Block.merge_blocks(cfg.get_blocks())]).get_func() for cfg in cfgs]
+    result_funcs = [CFG.from_blocks(cfg.get_func(), [Block.merge_blocks(cfg.get_blocks(), cfg, True)]).get_func() for cfg in cfgs]
     brilProgram["functions"] = result_funcs
 
     json.dump(brilProgram, args.output, indent=2, sort_keys=True)
