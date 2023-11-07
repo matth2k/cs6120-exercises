@@ -41,6 +41,22 @@ if __name__ == "__main__":
         "-v", "--verbose", dest="verbose", default=False, action="store_true"
     )
     parser.add_argument(
+        "-f",
+        "--function",
+        dest="function",
+        type=str,
+        help="Which function the blocks belong to",
+        default="main",
+    )
+    parser.add_argument(
+        "-b",
+        "--blocks",
+        dest="blocks",
+        type=str,
+        nargs="*",
+        help="A list of basic block names to mark as a hot path",
+    )
+    parser.add_argument(
         "input", nargs="?", type=argparse.FileType("r"), default=sys.stdin
     )
     parser.add_argument(
@@ -52,19 +68,35 @@ if __name__ == "__main__":
     cfgs = [CFG(func) for func in brilProgram["functions"]]
 
     result_funcs = []
+    blockNames = list(args.blocks) if args.blocks is not None else []
+    if args.verbose:
+        print(
+            f"{sys.argv[0]}: will try to merge following blocks {blockNames}",
+            file=sys.stderr,
+        )
     for cfg in cfgs:
         oldFunc = cfg.get_func()
         try:
-            blocksToMerge = [cfg.get_block("for.cond.12"), cfg.get_block("for.body.12")]
+            if oldFunc["name"] != args.function:
+                raise Exception(f"Wrong function name")
+            blocksToMerge = [cfg.get_block(blkName) for blkName in blockNames]
+            if None in blocksToMerge or len(blocksToMerge) == 0:
+                raise Exception(f"Invalid block list")
             functionBlocks = makeSpeculativePath(cfg, blocksToMerge)
             result_funcs.append(
                 CFG.from_blocks(cfg.get_func(), functionBlocks).get_func()
             )
+            if args.verbose:
+                print(
+                    f"{sys.argv[0]}: Good! {cfg.get_func()['name']}() has a speculative path now.",
+                    file=sys.stderr,
+                )
         except Exception as e:
-            print(
-                f"Failed to merge blocks in function {cfg.get_func()['name']} {e}",
-                file=sys.stderr,
-            )
+            if args.verbose:
+                print(
+                    f"{sys.argv[0]}: failed to merge blocks in function {cfg.get_func()['name']}(). Reason {e}. Skipping...",
+                    file=sys.stderr,
+                )
             result_funcs.append(oldFunc)
     brilProgram["functions"] = result_funcs
 
