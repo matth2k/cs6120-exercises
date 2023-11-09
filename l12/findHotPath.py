@@ -50,7 +50,7 @@ if __name__ == "__main__":
                 nextL = label
                 nextC = nextLs[label]
 
-        stillHot = nextC >= hotPathOccur * 3 / 4
+        stillHot = nextC >= hotPathOccur * 3 / 4 # and nextL != hotPath[0]
         if stillHot:
             hotPath.append(nextL)
             hotPathOccur = nextC

@@ -1,8 +1,11 @@
 #!/bin/bash
 BRIL_DIR=/home/matth2k/bril/benchmarks
-BENCHES="float/cordic.bril"
+BENCHES="float/cordic.bril float/n_root.bril"
 declare -A ARGS
 ARGS["float/cordic.bril"]="1.047"
+ARGS["float/n_root.bril"]=" "
+
+ACTION=./recompile.sh
 
 for bench in ${BENCHES}; do
     echo "=================================="
@@ -10,5 +13,5 @@ for bench in ${BENCHES}; do
     stem=$(basename ${fullpath} .bril)
     echo "Running ${stem}"
     echo "=================================="
-    ./recompile.sh ${fullpath} ${ARGS[${bench}]}
+    ${ACTION} ${fullpath} ${ARGS[${bench}]}
 done
