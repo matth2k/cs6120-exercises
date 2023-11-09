@@ -33,6 +33,7 @@ if __name__ == "__main__":
     hotPath = [maxL]
     hotPathOccur = maxC
     stillHot = True
+    cycleLen = None
     # Keep iterating until we lose more than a quarter of the hotness
     while stillHot:
         nextLs = defaultdict(int)
@@ -50,10 +51,18 @@ if __name__ == "__main__":
                 nextL = label
                 nextC = nextLs[label]
 
-        stillHot = nextC >= hotPathOccur * 3 / 4 # and nextL != hotPath[0]
+        stillHot = nextC >= hotPathOccur * 3 / 4
         if stillHot:
+            if nextL == hotPath[0] and cycleLen is None:
+                cycleLen = len(hotPath)
             hotPath.append(nextL)
             hotPathOccur = nextC
 
     for l in hotPath:
         print(l, file=args.output, end=" ")
+
+    if args.verbose:
+        print(
+            f"{sys.argv[0]}: Found cycle of length {cycleLen if cycleLen is not None else len(hotPath)}",
+            file=sys.stderr,
+        )
