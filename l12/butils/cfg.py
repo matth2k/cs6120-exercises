@@ -258,6 +258,12 @@ class Block:
                 if "label" in insn:
                     continue
 
+                if (
+                    speculative
+                    and "op" in insn
+                    and insn["op"] in ["print", "alloc", "store", "free"]
+                ):
+                    raise Exception("Cannot speculate with side effects")
                 if insn == blk.get_terminator():
                     if speculative and i + 1 < len(blocks) and insn["op"] == "br":
                         speculatedBlock = blocks[i + 1].get_name()

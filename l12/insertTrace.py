@@ -77,7 +77,7 @@ if __name__ == "__main__":
     for cfg in cfgs:
         oldFunc = cfg.get_func()
         try:
-            if oldFunc["name"] != args.function:
+            if oldFunc["name"] != args.function and args.function != "main":
                 raise Exception(f"Wrong function name")
             blocksToMerge = [cfg.get_block(blkName) for blkName in blockNames]
             if None in blocksToMerge or len(blocksToMerge) == 0:
