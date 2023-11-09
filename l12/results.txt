@@ -1,0 +1,174 @@
+==================================
+Running quadratic
+==================================
+Before:
+total_dyn_inst: 785
+After:
+total_dyn_inst: 881
+commits: 2, aborts: 4
+Transform Report:
+findHotPath.py: Found cycle of length 3
+insertTrace.py: will try to merge following blocks ['for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0', 'else.7', 'for.cond.0', 'for.body.0']
+insertTrace.py: failed to merge blocks in function main(). Reason Block for.cond.0 not found. Skipping...
+insertTrace.py: Good! sqrt() has a speculative path now.
+insertTrace.py: failed to merge blocks in function quadratic(). Reason Block for.cond.0 not found. Skipping...
+==================================
+Running mod_inv
+==================================
+Before:
+total_dyn_inst: 558
+After:
+total_dyn_inst: 599
+commits: 14, aborts: 1
+Transform Report:
+findHotPath.py: Found cycle of length 2
+insertTrace.py: will try to merge following blocks ['for.cond.6', 'for.body.6']
+insertTrace.py: Good! main() has a speculative path now.
+insertTrace.py: failed to merge blocks in function mod(). Reason Block for.cond.6 not found. Skipping...
+==================================
+Running loopfact
+==================================
+Before:
+40320
+total_dyn_inst: 116
+After:
+40320
+total_dyn_inst: 135
+commits: 1, aborts: 2
+Transform Report:
+findHotPath.py: Found cycle of length 2
+insertTrace.py: will try to merge following blocks ['for.cond.2', 'for.body.2', 'for.cond.2', 'for.body.2', 'for.cond.2', 'for.body.2', 'for.cond.2', 'for.body.2', 'for.cond.2', 'for.body.2', 'for.cond.2', 'for.body.2', 'for.cond.2']
+insertTrace.py: Good! main() has a speculative path now.
+==================================
+Running fizz-buzz
+==================================
+Before:
+total_dyn_inst: 3652
+After:
+total_dyn_inst: 3937
+commits: 100, aborts: 1
+Transform Report:
+findHotPath.py: Found cycle of length 2
+insertTrace.py: will try to merge following blocks ['for.cond.0', 'for.body.0']
+insertTrace.py: Good! main() has a speculative path now.
+==================================
+Running factors
+==================================
+Before:
+total_dyn_inst: 72
+After:
+total_dyn_inst: 90
+commits: 7, aborts: 1
+Transform Report:
+findHotPath.py: Found cycle of length 2
+insertTrace.py: will try to merge following blocks ['loopcheck', 'loopbody']
+insertTrace.py: Good! main() has a speculative path now.
+==================================
+Running check-primes
+==================================
+Before:
+total_dyn_inst: 8468
+After:
+total_dyn_inst: 55135
+commits: 3, aborts: 244
+Transform Report:
+findHotPath.py: Found cycle of length 3
+insertTrace.py: will try to merge following blocks ['for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5', 'for.body.5', 'else.18', 'for.cond.5']
+insertTrace.py: failed to merge blocks in function main(). Reason Block for.cond.5 not found. Skipping...
+insertTrace.py: Good! checkPrime() has a speculative path now.
+==================================
+Running birthday
+==================================
+Before:
+0.50729723432398566
+total_dyn_inst: 484
+After:
+0.50729723432398566
+total_dyn_inst: 497
+commits: 1, aborts: 2
+Transform Report:
+findHotPath.py: Found cycle of length 2
+insertTrace.py: will try to merge following blocks ['for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1', 'for.body.1', 'for.cond.1']
+insertTrace.py: failed to merge blocks in function main(). Reason Block for.cond.1 not found. Skipping...
+insertTrace.py: Good! probability() has a speculative path now.
+==================================
+Running armstrong
+==================================
+Before:
+true
+total_dyn_inst: 133
+After:
+true
+total_dyn_inst: 154
+commits: 3, aborts: 3
+Transform Report:
+findHotPath.py: Found cycle of length 2
+insertTrace.py: will try to merge following blocks ['loop', 'body', 'loop', 'body', 'loop']
+insertTrace.py: failed to merge blocks in function main(). Reason Cannot speculate with side effects. Skipping...
+insertTrace.py: failed to merge blocks in function getDigits(). Reason Block loop not found. Skipping...
+insertTrace.py: failed to merge blocks in function mod(). Reason Block loop not found. Skipping...
+insertTrace.py: Good! power() has a speculative path now.
+==================================
+Running cordic
+==================================
+Before:
+0.86369602123419631
+total_dyn_inst: 517
+After:
+0.86369602123419631
+total_dyn_inst: 540
+commits: 8, aborts: 1
+Transform Report:
+findHotPath.py: Found cycle of length 2
+insertTrace.py: will try to merge following blocks ['for.cond.12', 'for.body.12']
+insertTrace.py: failed to merge blocks in function main(). Reason Block for.cond.12 not found. Skipping...
+insertTrace.py: Good! cordic() has a speculative path now.
+==================================
+Running n_root
+==================================
+Before:
+1.51571786995120950
+total_dyn_inst: 733
+After:
+1.51571786995120950
+total_dyn_inst: 793
+commits: 20, aborts: 20
+Transform Report:
+findHotPath.py: Found cycle of length 2
+insertTrace.py: will try to merge following blocks ['while', 'continue', 'while', 'continue', 'while', 'continue', 'while']
+insertTrace.py: Good! pow() has a speculative path now.
+insertTrace.py: failed to merge blocks in function n_root(). Reason Cannot speculate with side effects. Skipping...
+insertTrace.py: failed to merge blocks in function main(). Reason Block while not found. Skipping...
+==================================
+Running norm
+==================================
+Before:
+110.55285076250027032
+total_dyn_inst: 505
+After:
+110.55285076250027032
+total_dyn_inst: 545
+commits: 20, aborts: 0
+Transform Report:
+findHotPath.py: Found cycle of length 2
+insertTrace.py: will try to merge following blocks ['while', 'continue', 'while']
+insertTrace.py: Good! pow() has a speculative path now.
+insertTrace.py: failed to merge blocks in function n_root(). Reason Cannot speculate with side effects. Skipping...
+insertTrace.py: failed to merge blocks in function pack(). Reason Block while not found. Skipping...
+insertTrace.py: failed to merge blocks in function print_array(). Reason Block while not found. Skipping...
+insertTrace.py: failed to merge blocks in function euclidean_norm(). Reason Block while not found. Skipping...
+insertTrace.py: failed to merge blocks in function main(). Reason Block while not found. Skipping...
+==================================
+Running sqrt
+==================================
+Before:
+18.08314132002512409
+total_dyn_inst: 322
+After:
+18.08314132002512409
+total_dyn_inst: 418
+commits: 1, aborts: 3
+Transform Report:
+findHotPath.py: Found cycle of length 5
+insertTrace.py: will try to merge following blocks ['for.cond.4', 'for.body.4', 'then.18', 'endif.18', 'else.25', 'for.cond.4', 'for.body.4', 'then.18', 'endif.18', 'else.25', 'for.cond.4', 'for.body.4', 'then.18', 'endif.18', 'else.25', 'for.cond.4', 'for.body.4', 'then.18', 'endif.18', 'else.25', 'for.cond.4', 'for.body.4', 'then.18', 'endif.18', 'else.25', 'for.cond.4', 'for.body.4', 'then.18', 'endif.18', 'else.25', 'for.cond.4', 'for.body.4', 'then.18', 'endif.18']
+insertTrace.py: Good! main() has a speculative path now.
