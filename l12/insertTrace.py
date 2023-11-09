@@ -74,6 +74,11 @@ if __name__ == "__main__":
             f"{sys.argv[0]}: will try to merge following blocks {blockNames}",
             file=sys.stderr,
         )
+    if blockNames is None or len(blockNames) < 2:
+        print(f"{sys.argv[0]}: Need at least two blocks to merge", file=sys.stderr)
+        sys.exit(1)
+
+    thereWasAnError = True
     for cfg in cfgs:
         oldFunc = cfg.get_func()
         try:
@@ -91,6 +96,7 @@ if __name__ == "__main__":
                     f"{sys.argv[0]}: Good! {cfg.get_func()['name']}() has a speculative path now.",
                     file=sys.stderr,
                 )
+            thereWasAnError = False
         except Exception as e:
             if args.verbose:
                 print(
@@ -101,3 +107,6 @@ if __name__ == "__main__":
     brilProgram["functions"] = result_funcs
 
     json.dump(brilProgram, args.output, indent=2, sort_keys=True)
+
+    if thereWasAnError:
+        sys.exit(1)

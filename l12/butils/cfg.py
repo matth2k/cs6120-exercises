@@ -261,7 +261,7 @@ class Block:
                 if (
                     speculative
                     and "op" in insn
-                    and insn["op"] in ["print", "alloc", "store", "free"]
+                    and insn["op"] in ["print", "alloc", "store", "free", "call"]
                 ):
                     raise Exception("Cannot speculate with side effects")
                 if insn == blk.get_terminator():
