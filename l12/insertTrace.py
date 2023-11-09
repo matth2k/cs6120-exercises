@@ -80,7 +80,7 @@ if __name__ == "__main__":
             if oldFunc["name"] != args.function and args.function != "main":
                 raise Exception(f"Wrong function name")
             blocksToMerge = [cfg.get_block(blkName) for blkName in blockNames]
-            if None in blocksToMerge or len(blocksToMerge) == 0:
+            if None in blocksToMerge or len(blocksToMerge) <= 1:
                 raise Exception(f"Invalid block list")
             functionBlocks = makeSpeculativePath(cfg, blocksToMerge)
             result_funcs.append(
