@@ -11,11 +11,13 @@
 * __Implementation Details__
   * I used the reference `brili` interpreter written in TypeScript as a baseline. Then, I made two forks of it.
     * One fork is used for printing a program trace to terminal.
-    * One is used to help me collect results: it prints out the number of commits and aborts observed during execution.
+    * One is used to help me collect results after the fact. It prints out the number of commits and aborts observed during execution.
   * I wrote a helper program to analyze that trace: `findHotPath.py`.
     * This is probably the weakest part of my implementation. I start out with the hottest block in the program then iterate off of it until the path I am building gets too cold.
   * I have a compiler pass `insertTrace.py` that takes in this hot path as an input and transforms the Bril program.
-    *
+    * This is the most thoughtful part of my implementation. I think I nailed merging the blocks in a trace while preserviing the correct control flow and speculating on unsafe instructions like `ret`.
+    * The merged block is inserted where the hot path begins. All predecessors of the hot path are redirected to the speculative block. The speculative block will abort to the original program, and the speculative block will commit and return to the successor of the hot path.
+    * With this technique, I always had functionally correct benchmarks.
 
 * __Evaluation__
   As long as we are using an interpreter, we will not be getting program speedups without chaining this pass into more optimizations. For instnace, unless we strengthen the guard statements, we don’t have the opportunity for common subexpression elimination. Hence, I don't have any real speedups to report in this assignment. The real measure of success for this lesson is to hope that the speculative programs are only slightly slower. The logic being that if our hot path is truly hot, we won’t need to abort often. Hence, the speculative program should be only a little bit slower than the baseline if we find a good trace.
