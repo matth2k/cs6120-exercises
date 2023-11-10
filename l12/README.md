@@ -16,7 +16,7 @@
     * This is probably the weakest part of my implementation. I greedily start out with the hottest block in the CFG then iterate off of it until the path I am building gets too cold.
   * I have a compiler pass `insertTrace.py` that takes in this hot path as an input and transforms the Bril program.
     * This is the most thoughtful part of my implementation. I think I nailed merging the blocks in a trace while preserving the correct control flow and also avoiding speculating on unsafe instructions like `ret`.
-    * The merged block is inserted where the hot path begins. All predecessors of the hot path are redirected to the speculative block. The speculative block will abort to the header of the hot path, and the speculative block will commit and return to the successor of the hot path.
+    * The merged block is inserted where the hot path begins. All predecessors of the hot path are redirected to the speculative block. The speculative block will abort to the header of the hot path, and the speculative block will commit and return to the successor of the hot path. Of course, you need to remember that you need to negative the condition on speculated "else" branches.
     * With this technique, I always had functionally correct benchmarks. The previous control-flow graph API I made in other assignments really sped up this part.
 
 * __Evaluation__
