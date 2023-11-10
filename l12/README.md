@@ -22,22 +22,47 @@
 
   With that being said, we can observe how well my speculative execution performs by comparing the relative number of aborts to commits:
 
-  | Benchmark         | Blocks in Trace | Instrs in Trace | Commits | Aborts | Baseline (Instrs) | Speculative (Instrs) |
-  | ----------------- | --------------- | --------------- | ------- | ------ | ----------------  | -------------------- |
-  | quadratic         | 3               | 338             | 2       | 4      | 785               | 881                  |
-  | mod_inv           | 2               | 15              | 14      | 1      | 558               | 599                  |
-  | loopfact          | 2               | 79              | 1       | 2      | 116               | 135                  |
-  | fizz-buzz         | 2               | 28              | 100     | 1      | 3652              | 3937                 |
-  | factors           | 2               | 10              | 7       | 1      | 72                | 90                   |
-  | check-primes      | 3               | 826             | 3       | 244    | 8468              | 55135                |
-  | birthday          | 2               | 407             | 1       | 2      | 484               | 497                  |
-  | armstrong         | 2               | 15              | 3       | 3      | 133               | 154                  |
-  | cordic            | 2               | 27              | 8       | 1      | 517               | 540                  |
-  | n_root            | 2               | 17              | 20      | 20     | 733               | 793                  |
-  | norm              | 2               | 9               | 20      | 0      | 733               | 793                  |
-  | sqrt              | 5               | 231             | 1       | 3      | 322               | 418                  |
+  | Benchmark         | Blocks in Trace | Instrs in Trace | Commits | Aborts |
+  | ----------------- | --------------- | --------------- | ------- | ------ |
+  | quadratic         | 3               | 338             | 2       | 4      |
+  | mod_inv           | 2               | 15              | 14      | 1      |
+  | loopfact          | 2               | 79              | 1       | 2      |
+  | fizz-buzz         | 2               | 28              | 100     | 1      |
+  | factors           | 2               | 10              | 7       | 1      |
+  | check-primes      | 3               | 826             | 3       | 244    |
+  | birthday          | 2               | 407             | 1       | 2      |
+  | armstrong         | 2               | 15              | 3       | 3      |
+  | cordic            | 2               | 27              | 8       | 1      |
+  | n_root            | 2               | 17              | 20      | 20     |
+  | norm              | 2               | 9               | 20      | 0      |
+  | sqrt              | 5               | 231             | 1       | 3      |
 
-  The results are pretty diverse, we have some good results like `mod-inv` and `cordic`. While others like `check-primes` are clearly bad traces to optimize off of.
+  The results are pretty diverse, we have some good results like `mod-inv` and `cordic`. While others like `check-primes` are clearly bad traces to optimize off of. The theoretical speedup of the program will be the amount of instructions saved in the trace times the number of times we can expect. With that, we can calculate a very rough approximate for max feasible speedup assuming that:
+
+  * Every instruction takes the same amount of time to execute
+  * The commit vs abort count is representative of a typical execution
+  * Aborts themselves have no overhead
+  * The dynamic compilation time is not accounted into the cost
+
+  Speedup = Baseline / (Baseline - Instruction in Trace * Commits) 
+
+  | Benchmark         | Baseline (Instrs) | Speculative (Instrs) | Max Feasible Speedup |
+  | ----------------- | ----------------  | -------------------- | -------------------  |
+  | quadratic         | 785               | 881                  | 7.2x                 |
+  | mod_inv           | 558               | 599                  | 1.6x                 |
+  | loopfact          | 116               | 135                  | 1.5x                 |
+  | fizz-buzz         | 3652              | 3937                 | 4.3x                 |
+  | factors           | 72                | 90                   | 36x                  |
+  | check-primes      | 8468              | 55135                | 1.4x                 |
+  | birthday          | 484               | 497                  | 6.3x                 |
+  | armstrong         | 133               | 154                  | 1.5x                 |
+  | cordic            | 517               | 540                  | 1.7x                 |
+  | n_root            | 733               | 793                  | 1.9x                 |
+  | norm              | 505               | 545                  | 1.6x                 |
+  | sqrt              | 322               | 418                  | 3.5x                 |
+
+  These speedup measures are a little bit silly though, because the best speedups are on tiny programs where the overhead would be the majority of the cost anyways.
 
 * __Anything Hard or Interesting?__
   * Overall, I think the difficulty in this assignment is chosing reasonable heuristics that are both (1) easy enough to program and (2) actually capture enough hot paths to optimize.
+  * Finally, given all these limitations it was hard to get enough measures to make a conclusion about my implementation.
