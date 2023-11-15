@@ -202,12 +202,25 @@ def vanishes(phi):
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(
+        description="This program uses an SMT solver to determine if a univariate expression is polynomial in 'x' and zero modulo 8"
+    )
     parser.add_argument(
         "-v", "--verbose", dest="verbose", default=False, action="store_true"
     )
-    parser.add_argument("input", type=str, default="x")
+    parser.add_argument(
+        "-N",
+        "--bits",
+        dest="bits",
+        type=int,
+        default="16",
+        help="The number of bits the input variable 'x' is",
+    )
+    parser.add_argument(
+        "input", type=str, default="x", help="The expression p(x) to check"
+    )
     args = parser.parse_args()
+    rootBitVecSize = args.bits
     # Parse a polynomial.
     parser = lark.Lark(GRAMMAR)
     tree1 = parser.parse(args.input)
@@ -233,7 +246,7 @@ if __name__ == "__main__":
     )
 
     formula = z3.ForAll([x], expr == polynomial)
-    print("Q: Is this expression polynomial and constant modulo 8?")
+    print("Q: Is this expression polynomial in 'x' and zero modulo 8?")
     answer = vanishes(formula)
     if answer is None:
         print("A: No")
