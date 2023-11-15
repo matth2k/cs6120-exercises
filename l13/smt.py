@@ -71,6 +71,8 @@ def interp(tree, lookup):
     elif op == "index":
         sub = interp(tree.children[0], lookup)
         idx = interp(tree.children[1], lookup)
+        if idx >= sub.size() or idx < 0:
+            raise ValueError("Index out of bounds")
         return (sub & z3.BitVecVal(pow(2, idx), sub.size())) >> z3.BitVecVal(
             idx, sub.size()
         )
@@ -78,6 +80,12 @@ def interp(tree, lookup):
         sub = interp(tree.children[0], lookup)
         hi = interp(tree.children[1], lookup)
         lo = interp(tree.children[2], lookup)
+        if hi >= sub.size() or hi < 0:
+            raise ValueError("Hi index out of bounds")
+        if lo >= sub.size() or lo < 0:
+            raise ValueError("Lo index out of bounds")
+        if hi < lo:
+            raise ValueError("Hi index must be greater than lo index")
         power = hi - lo + 1
         mask = z3.BitVecVal(pow(2, power) - 1, sub.size()) << z3.BitVecVal(
             lo, sub.size()
@@ -147,6 +155,17 @@ def solve(phi):
     return s.model()
 
 
+def vanishes(phi):
+    s = z3.Solver()
+    s.add(phi)
+    try:
+        s.check()  # The formula can be satisfied
+        print(s.model())
+        return True
+    except:
+        return False
+
+
 if __name__ == "__main__":
     # We know x times 2 is equivalent to a logical shify by?
     # x = z3.BitVec("x", 8)
@@ -160,8 +179,20 @@ if __name__ == "__main__":
     # print(solve(formula))
 
     parser = lark.Lark(GRAMMAR)
-    tree1 = parser.parse("(5 * (3 << x[3:1])) + y - 1")
+    tree1 = parser.parse("x[2:0] << 5")
+    bitVecSize = 8
+    expr = interp(
+        tree1, lambda x: z3.BitVec(x, bitVecSize) if x in ["x", "y"] else None
+    )
+    x = z3.BitVec("x", bitVecSize)
+    # Ax(x-1)(x-2)(x-3) + 4Bx(x-1)(x-2) + 4Cx(x-1) + 8Dx + 8E
+    polynomial = (
+        (z3.BitVec("A", bitVecSize) * x * (x - 1) * (x - 2) * (x - 3))
+        + (4 * z3.BitVec("B", bitVecSize) * x * (x - 1) * (x - 2))
+        + (4 * z3.BitVec("C", bitVecSize) * x * (x - 1))
+        + (8 * z3.BitVec("D", bitVecSize) * x)
+        + (8 * z3.BitVec("E", bitVecSize))
+    )
 
-    print(pretty(tree1))
-
-    print(interp(tree1, lambda v: z3.BitVec(v, 32)))
+    formula = z3.ForAll([x], expr == polynomial)
+    print(vanishes(formula))
