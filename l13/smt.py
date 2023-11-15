@@ -37,7 +37,7 @@ GRAMMAR = """
 %ignore WS
 """.strip()
 
-rootBitVecSize = 16
+rootBitVecSize = 8
 
 
 def interp(tree, lookup):
@@ -213,7 +213,7 @@ if __name__ == "__main__":
         "--bits",
         dest="bits",
         type=int,
-        default="16",
+        default=16,
         help="The number of bits the input variable 'x' is",
     )
     parser.add_argument(
@@ -225,8 +225,9 @@ if __name__ == "__main__":
     parser = lark.Lark(GRAMMAR)
     tree1 = parser.parse(args.expression)
     expr = interp(tree1, lambda x: z3.BitVec(x, rootBitVecSize) if x in ["x"] else None)
-    print("Expression entered:")
-    print(pretty(tree1))
+    if args.verbose:
+        print("Expression entered:")
+        print(pretty(tree1))
 
     # Vars needed
     x = z3.BitVec("x", rootBitVecSize)
