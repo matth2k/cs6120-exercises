@@ -37,6 +37,8 @@ GRAMMAR = """
 %ignore WS
 """.strip()
 
+rootBitVecSize = 16
+
 
 def interp(tree, lookup):
     """Evaluate the arithmetic expression.
@@ -73,7 +75,7 @@ def interp(tree, lookup):
         sub = interp(tree.children[0], lookup)
         return -sub
     elif op == "num":  # Literal number.
-        return z3.BitVecVal(int(tree.children[0]), 8)
+        return z3.BitVecVal(int(tree.children[0]), rootBitVecSize)
     elif op == "index":  # Literal number.
         return int(tree.children[0])
     elif op == "var":  # Variable lookup.
@@ -209,19 +211,18 @@ if __name__ == "__main__":
     # Parse a polynomial.
     parser = lark.Lark(GRAMMAR)
     tree1 = parser.parse(args.input)
-    bitVecSize = 8
-    expr = interp(tree1, lambda x: z3.BitVec(x, bitVecSize) if x in ["x"] else None)
+    expr = interp(tree1, lambda x: z3.BitVec(x, rootBitVecSize) if x in ["x"] else None)
     print("Expression entered:")
     print(pretty(tree1))
 
     # Vars needed
-    x = z3.BitVec("x", bitVecSize)
+    x = z3.BitVec("x", rootBitVecSize)
     # Holes
-    A = z3.BitVec("A", bitVecSize)
-    B = z3.BitVec("B", bitVecSize)
-    C = z3.BitVec("C", bitVecSize)
-    D = z3.BitVec("D", bitVecSize)
-    E = z3.BitVec("E", bitVecSize)
+    A = z3.BitVec("A", rootBitVecSize)
+    B = z3.BitVec("B", rootBitVecSize)
+    C = z3.BitVec("C", rootBitVecSize)
+    D = z3.BitVec("D", rootBitVecSize)
+    E = z3.BitVec("E", rootBitVecSize)
     # Ax(x-1)(x-2)(x-3) + 4Bx(x-1)(x-2) + 4Cx(x-1) + 8Dx + 8E
     polynomial = (
         (A * x * (x - 1) * (x - 2) * (x - 3))
@@ -232,7 +233,7 @@ if __name__ == "__main__":
     )
 
     formula = z3.ForAll([x], expr == polynomial)
-    print("Q: Is this expression constant modulo 8?")
+    print("Q: Is this expression polynomial and constant modulo 8?")
     answer = vanishes(formula)
     if answer is None:
         print("A: No")
@@ -255,8 +256,4 @@ if __name__ == "__main__":
             if len(VExpr) > 0:
                 VExpr += " + "
             VExpr += f"{8 * answer[D].as_long()}x"
-        if answer[E].as_long() != 0:
-            if len(VExpr) > 0:
-                VExpr += " + "
-            VExpr += f"{8 * answer[E]}x"
         print(VExpr if len(VExpr) > 0 else "0")
