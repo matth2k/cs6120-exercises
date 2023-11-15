@@ -14,15 +14,15 @@ GRAMMAR = """
   | term "<<" item      -> shl
   | term "+" item        -> add
   | term "-" item        -> sub
-  | "(" term ")" "^" const -> exp
+  | "(" term ")" "^" index -> exp
 
 ?item: var
   | const
   | var "[" index "]" -> onebit
   | var "[" index ":" index "]" -> bitsel
   | "(" start ")"
-  | const term -> multiple
-  | var "^" const -> pow
+  | var "^" index -> pow
+  | const item -> multiple
 
 ?var: CNAME -> var
 
