@@ -1,30 +1,35 @@
 import z3
 import lark
+import argparse
 
 GRAMMAR = """
-?start: sum
-  | sum "?" sum ":" sum -> if
-
-?sum: term
-  | sum "+" term        -> add
-  | sum "-" term        -> sub
+?start: term
+  | term "?" term ":" term -> if
 
 ?term: item
   | term "*"  item      -> mul
+  | item "(" term ")"      -> mul
   | term "/"  item      -> div
   | term ">>" item      -> shr
   | term "<<" item      -> shl
+  | term "+" item        -> add
+  | term "-" item        -> sub
+  | "(" term ")" "^" const -> exp
 
 ?item: var
   | const
-  | var "[" const "]" -> index
-  | var "[" const ":" const "]" -> bitsel
+  | var "[" index "]" -> onebit
+  | var "[" index ":" index "]" -> bitsel
   | "(" start ")"
+  | const term -> multiple
+  | var "^" const -> pow
 
 ?var: CNAME -> var
 
 ?const: NUMBER           -> num
   | "-" item            -> neg
+
+?index: NUMBER           -> index
 
 %import common.NUMBER
 %import common.WS
@@ -41,14 +46,22 @@ def interp(tree, lookup):
     """
 
     op = tree.data
-    if op in ("add", "sub", "mul", "div", "shl", "shr"):  # Binary operators.
+    if op in (
+        "add",
+        "sub",
+        "mul",
+        "div",
+        "shl",
+        "shr",
+        "multiple",
+    ):  # Binary operators.
         lhs = interp(tree.children[0], lookup)
         rhs = interp(tree.children[1], lookup)
         if op == "add":
             return lhs + rhs
         elif op == "sub":
             return lhs - rhs
-        elif op == "mul":
+        elif op == "mul" or op == "multiple":
             return lhs * rhs
         elif op == "div":
             return lhs / rhs
@@ -60,6 +73,8 @@ def interp(tree, lookup):
         sub = interp(tree.children[0], lookup)
         return -sub
     elif op == "num":  # Literal number.
+        return z3.BitVecVal(int(tree.children[0]), 8)
+    elif op == "index":  # Literal number.
         return int(tree.children[0])
     elif op == "var":  # Variable lookup.
         return lookup(tree.children[0])
@@ -67,8 +82,10 @@ def interp(tree, lookup):
         cond = interp(tree.children[0], lookup)
         true = interp(tree.children[1], lookup)
         false = interp(tree.children[2], lookup)
-        return (cond != 0) * true + (cond == 0) * false
-    elif op == "index":
+        return (cond != z3.BitVecVal(0, cond.size())) * true + (
+            cond == z3.BitVecVal(0, cond.size())
+        ) * false
+    elif op == "onebit":
         sub = interp(tree.children[0], lookup)
         idx = interp(tree.children[1], lookup)
         if idx >= sub.size() or idx < 0:
@@ -91,6 +108,15 @@ def interp(tree, lookup):
             lo, sub.size()
         )
         return (sub & mask) >> z3.BitVecVal(lo, sub.size())
+    elif op == "pow" or op == "exp":
+        sub = interp(tree.children[0], lookup)
+        exp = interp(tree.children[1], lookup)
+        if exp < 1:
+            raise ValueError("bad exponent")
+        newExpr = sub
+        for i in range(exp - 1):
+            newExpr = newExpr * sub
+        return newExpr
 
 
 def pretty(tree, subst={}, paren=False):
@@ -112,22 +138,29 @@ def pretty(tree, subst={}, paren=False):
             return s
 
     op = tree.data
-    if op in ("add", "sub", "mul", "div", "shl", "shr"):
+    if op in ("add", "sub", "mul", "div", "shl", "shr", "pow", "exp", "multiple"):
         lhs = pretty(tree.children[0], subst, True)
         rhs = pretty(tree.children[1], subst, True)
         c = {
             "add": "+",
             "sub": "-",
             "mul": "*",
+            "multiple": " ",
             "div": "/",
             "shl": "<<",
             "shr": ">>",
+            "pow": "^",
+            "exp": "^",
         }[op]
+        if op == "pow" or op == "exp":
+            return par("{}{}{}".format(lhs, c, rhs))
+        if op == "multiple":
+            return par("{}{}".format(lhs, rhs))
         return par("{} {} {}".format(lhs, c, rhs))
     elif op == "neg":
         sub = pretty(tree.children[0], subst)
         return "-{}".format(sub, True)
-    elif op == "num":
+    elif op == "num" or op == "index":
         return tree.children[0]
     elif op == "var":
         name = tree.children[0]
@@ -137,7 +170,7 @@ def pretty(tree, subst={}, paren=False):
         true = pretty(tree.children[1], subst)
         false = pretty(tree.children[2], subst)
         return par("{} ? {} : {}".format(cond, true, false))
-    elif op == "index":
+    elif op == "onebit":
         sub = pretty(tree.children[0], subst)
         idx = pretty(tree.children[1], subst)
         return par("{}[{}]".format(sub, idx))
@@ -160,39 +193,70 @@ def vanishes(phi):
     s.add(phi)
     try:
         s.check()  # The formula can be satisfied
-        print(s.model())
-        return True
+        # print(s.model())
+        return s.model()
     except:
-        return False
+        return None
 
 
 if __name__ == "__main__":
-    # We know x times 2 is equivalent to a logical shify by?
-    # x = z3.BitVec("x", 8)
-    # a = z3.BitVecVal(10, 32)
-    # print(a)
-    # slow_expr = x * 2
-    # hole = z3.BitVec("hole", 8)
-    # fast_expr = x << hole
-
-    # formula = z3.ForAll([x], fast_expr == slow_expr)
-    # print(solve(formula))
-
-    parser = lark.Lark(GRAMMAR)
-    tree1 = parser.parse("x[2:0] << 5")
-    bitVecSize = 8
-    expr = interp(
-        tree1, lambda x: z3.BitVec(x, bitVecSize) if x in ["x", "y"] else None
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-v", "--verbose", dest="verbose", default=False, action="store_true"
     )
+    parser.add_argument("input", type=str, default="x")
+    args = parser.parse_args()
+    # Parse a polynomial.
+    parser = lark.Lark(GRAMMAR)
+    tree1 = parser.parse(args.input)
+    bitVecSize = 8
+    expr = interp(tree1, lambda x: z3.BitVec(x, bitVecSize) if x in ["x"] else None)
+    print("Expression entered:")
+    print(pretty(tree1))
+
+    # Vars needed
     x = z3.BitVec("x", bitVecSize)
+    # Holes
+    A = z3.BitVec("A", bitVecSize)
+    B = z3.BitVec("B", bitVecSize)
+    C = z3.BitVec("C", bitVecSize)
+    D = z3.BitVec("D", bitVecSize)
+    E = z3.BitVec("E", bitVecSize)
     # Ax(x-1)(x-2)(x-3) + 4Bx(x-1)(x-2) + 4Cx(x-1) + 8Dx + 8E
     polynomial = (
-        (z3.BitVec("A", bitVecSize) * x * (x - 1) * (x - 2) * (x - 3))
-        + (4 * z3.BitVec("B", bitVecSize) * x * (x - 1) * (x - 2))
-        + (4 * z3.BitVec("C", bitVecSize) * x * (x - 1))
-        + (8 * z3.BitVec("D", bitVecSize) * x)
-        + (8 * z3.BitVec("E", bitVecSize))
+        (A * x * (x - 1) * (x - 2) * (x - 3))
+        + (4 * B * x * (x - 1) * (x - 2))
+        + (4 * C * x * (x - 1))
+        + (8 * D * x)
+        + (8 * E)
     )
 
     formula = z3.ForAll([x], expr == polynomial)
-    print(vanishes(formula))
+    print("Q: Is this expression constant modulo 8?")
+    answer = vanishes(formula)
+    if answer is None:
+        print("A: No")
+    else:
+        print("A: Yes it is, with vanishing polynomial")
+        VExpr = ""
+        if answer[A].as_long() != 0:
+            if len(VExpr) > 0:
+                VExpr += " + "
+            VExpr += f"{answer[A].as_long()}x(x-1)(x-2)(x-3)"
+        if answer[B].as_long() != 0:
+            if len(VExpr) > 0:
+                VExpr += " + "
+            VExpr += f"{4 * answer[B].as_long()}x(x-1)(x-2)"
+        if answer[C].as_long() != 0:
+            if len(VExpr) > 0:
+                VExpr += " + "
+            VExpr += f"{4 * answer[C].as_long()}x(x-1)"
+        if answer[D].as_long() != 0:
+            if len(VExpr) > 0:
+                VExpr += " + "
+            VExpr += f"{8 * answer[D].as_long()}x"
+        if answer[E].as_long() != 0:
+            if len(VExpr) > 0:
+                VExpr += " + "
+            VExpr += f"{8 * answer[E]}x"
+        print(VExpr if len(VExpr) > 0 else "0")
