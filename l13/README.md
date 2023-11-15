@@ -1,7 +1,7 @@
 # Lesson 13 Discussion
 
 * __Summary__
-  * Given some univariate expression written with arithmetic, logical, and conditional operators, my solver will determine if it is (1) polynomial in variable 'x' and (2)equal to zero modulo 8.
+  * Given some univariate expression written with arithmetic, logical, and conditional operators, my solver will determine if it is (1) polynomial in variable 'x' and (2) equal to zero modulo 8.
     * [Code](https://github.com/matth2k/cs6120-exercises/blob/main/l13)
     * `usage: smt.py [-h] [-v] [-N BITS] expression`
     * This exercise was inspired by [Drane and Constantinides](https://cas.ee.ic.ac.uk/people/gac1/pubs/TheoDACKC11.pdf) on the formal verification of datapaths. In short, the paper uses the technique of "vanishing polynomials mod 2^k" to verify if a datapath and its optimized alternative are in fact equivalent. In my toy program, I only check if a polynomial vanishes modulo 2^3.
