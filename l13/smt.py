@@ -217,13 +217,13 @@ if __name__ == "__main__":
         help="The number of bits the input variable 'x' is",
     )
     parser.add_argument(
-        "input", type=str, default="x", help="The expression p(x) to check"
+        "expression", type=str, default="x", help="The expression p(x) to check"
     )
     args = parser.parse_args()
     rootBitVecSize = args.bits
     # Parse a polynomial.
     parser = lark.Lark(GRAMMAR)
-    tree1 = parser.parse(args.input)
+    tree1 = parser.parse(args.expression)
     expr = interp(tree1, lambda x: z3.BitVec(x, rootBitVecSize) if x in ["x"] else None)
     print("Expression entered:")
     print(pretty(tree1))
